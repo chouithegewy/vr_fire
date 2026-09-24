@@ -13,6 +13,7 @@
 //! Meshes are built on a per-frame time budget so streaming never blows a 120 fps frame.
 
 use crate::cog::{Cell, Cog, TileKey};
+use crate::imagery::{Draped, MosaicKey};
 use crate::{Anchor, WorldOrigin};
 use bevy::asset::RenderAssetUsages;
 use bevy::math::DVec2;
@@ -176,6 +177,8 @@ pub struct Terrain {
     built: HashMap<Patch, Built>,
     jobs: Vec<Job>,
     material: Handle<StandardMaterial>,
+    /// Statewide imagery atlas (UV0).
+    atlas: MosaicKey,
     since_update: f32,
     pub stats: (usize, usize),
     /// Bytes of `.vrh` patches downloaded, and patches that fell back to COG.
@@ -228,7 +231,7 @@ fn packed_base() -> String {
 }
 
 impl Terrain {
-    pub fn new(material: Handle<StandardMaterial>) -> Self {
+    pub fn new(material: Handle<StandardMaterial>, atlas: MosaicKey) -> Self {
         let grid = GridSpec::default();
         let albers = Albers::new().unwrap();
         let supers = california_supers(&grid, &albers);
@@ -243,6 +246,7 @@ impl Terrain {
             built: HashMap::new(),
             jobs: Vec::new(),
             material,
+            atlas,
             since_update: 1.0,
             stats: (0, 0),
             packed_bytes: 0,
@@ -303,6 +307,24 @@ impl Terrain {
     /// Ask the `hires` service for 1 m lidar under tile `t` (no-op if already requested).
     pub fn request_hires(&mut self, t: TileId) {
         self.hires.entry(t).or_insert(HiresState::Waiting { age: 0.0, next_poll: 0.0, polling: false });
+    }
+
+    /// Detail imagery mosaic for a patch (UV1); None = statewide atlas only.
+    fn detail_mosaic(&self, patch: Patch) -> Option<MosaicKey> {
+        let tile_box = |t: TileId| self.albers.lonlat_bounds(&self.grid.tile_bounds(t)).ok();
+        match patch {
+            Patch::Super { .. } => None,
+            Patch::Hires { t } => Some(MosaicKey::covering(16, &tile_box(t)?)),
+            Patch::Tile { t, lod: 0 } => Some(MosaicKey::covering(15, &tile_box(t)?)),
+            Patch::Tile { t, lod: 1 | 2 } => Some(MosaicKey::covering(14, &tile_box(t)?)),
+            Patch::Tile { t, .. } => {
+                // Coarser tiles share one ~30 m/px mosaic per super tile.
+                let (sx, sy) = (t.tx.div_euclid(SUPER_TILES), t.ty.div_euclid(SUPER_TILES));
+                let spec = Patch::Super { sx, sy }.spec(&self.grid);
+                let b = vr_fire::grid::Bounds { x_min: spec.x_min, y_min: spec.y_max - SUPER_SIZE, x_max: spec.x_min + SUPER_SIZE, y_max: spec.y_max };
+                Some(MosaicKey::covering(12, &self.albers.lonlat_bounds(&b).ok()?))
+            }
+        }
     }
 
     fn new_job(&self, patch: Patch, prio: f64) -> Job {
@@ -640,12 +662,17 @@ pub fn run_jobs(
                 if job.heights.len() < m * m {
                     break;
                 }
-                let job = terrain.jobs.remove(i);
-                let (mesh, heights) = build_mesh(&spec, &job.heights);
+                let mut job = terrain.jobs.remove(i);
+                if job.ll.is_empty() {
+                    job.ll = node_lonlats(&terrain.albers, &spec);
+                }
+                let detail = terrain.detail_mosaic(job.patch);
+                let (mesh, heights) = build_mesh(&spec, &job.heights, &job.ll, terrain.atlas, detail.unwrap_or(terrain.atlas));
                 let entity = commands
                     .spawn((
                         Mesh3d(meshes.add(mesh)),
                         MeshMaterial3d(terrain.material.clone()),
+                        Draped(detail),
                         Anchor(DVec2::new(spec.x_min, spec.y_max)),
                         Transform::from_translation(crate::world_pos(&origin, spec.x_min, spec.y_max, 0.0)),
                         Visibility::Hidden,
@@ -702,38 +729,8 @@ fn poll_hires(terrain: &mut Terrain, dt: f32) {
     }
 }
 
-fn color(h: f32, slope: f32) -> [f32; 4] {
-    let ramp: [(f32, [f32; 3]); 7] = [
-        (-200.0, [0.30, 0.34, 0.36]),
-        (-50.0, [0.76, 0.70, 0.50]),
-        (150.0, [0.50, 0.55, 0.28]),
-        (900.0, [0.17, 0.33, 0.13]),
-        (2200.0, [0.28, 0.33, 0.20]),
-        (3000.0, [0.45, 0.43, 0.40]),
-        (3700.0, [0.95, 0.96, 0.98]),
-    ];
-    let mut c = ramp[ramp.len() - 1].1;
-    if h < ramp[0].0 {
-        c = ramp[0].1;
-    } else {
-        for w in ramp.windows(2) {
-            if h < w[1].0 {
-                let t = ((h - w[0].0) / (w[1].0 - w[0].0)).clamp(0.0, 1.0);
-                c = [0, 1, 2].map(|k| w[0].1[k] + (w[1].1[k] - w[0].1[k]) * t);
-                break;
-            }
-        }
-    }
-    let rock = [0.42, 0.39, 0.35];
-    let r = ((slope - 0.55) / 0.35).clamp(0.0, 1.0);
-    let c = [0, 1, 2].map(|k| c[k] + (rock[k] - c[k]) * r);
-    // sRGB → linear for the vertex color attribute.
-    let lin = |v: f32| v.powf(2.2);
-    [lin(c[0]), lin(c[1]), lin(c[2]), 1.0]
-}
-
 /// Grid mesh (local to the NW corner: +X east, +Y up, +Z south) with skirts.
-fn build_mesh(s: &Spec, ringed: &[f32]) -> (Mesh, Heights) {
+fn build_mesh(s: &Spec, ringed: &[f32], ll: &[(f64, f64)], atlas: MosaicKey, detail: MosaicKey) -> (Mesh, Heights) {
     let n = s.n;
     let m = n + 2;
     let sp = s.spacing as f32;
@@ -741,7 +738,8 @@ fn build_mesh(s: &Spec, ringed: &[f32]) -> (Mesh, Heights) {
     let hr_s = |i: isize, j: isize| ringed[((j + 1) as usize) * m + (i + 1) as usize];
     let mut pos = Vec::with_capacity(n * n + 4 * n);
     let mut nor = Vec::with_capacity(n * n + 4 * n);
-    let mut col = Vec::with_capacity(n * n + 4 * n);
+    let mut uv0 = Vec::with_capacity(n * n + 4 * n);
+    let mut uv1 = Vec::with_capacity(n * n + 4 * n);
     let mut inner = Vec::with_capacity(n * n);
     for j in 0..n {
         for i in 0..n {
@@ -753,7 +751,9 @@ fn build_mesh(s: &Spec, ringed: &[f32]) -> (Mesh, Heights) {
             let nv = Vec3::new(-dx, 1.0, -dz).normalize();
             pos.push([i as f32 * sp, h, j as f32 * sp]);
             nor.push(nv.to_array());
-            col.push(color(h, 1.0 - nv.y));
+            let (lon, lat) = ll[(j + 1) * m + (i + 1)];
+            uv0.push(atlas.uv(lon, lat));
+            uv1.push(detail.uv(lon, lat));
         }
     }
     let v = |i: usize, j: usize| (j * n + i) as u32;
@@ -777,7 +777,8 @@ fn build_mesh(s: &Spec, ringed: &[f32]) -> (Mesh, Heights) {
             let p = pos[k as usize];
             pos.push([p[0], p[1] - depth, p[2]]);
             nor.push(nor[k as usize]);
-            col.push(col[k as usize]);
+            uv0.push(uv0[k as usize]);
+            uv1.push(uv1[k as usize]);
         }
         for q in 0..e.len() - 1 {
             let (a, b) = (e[q], e[q + 1]);
@@ -788,7 +789,8 @@ fn build_mesh(s: &Spec, ringed: &[f32]) -> (Mesh, Heights) {
     let mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD)
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, pos)
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, nor)
-        .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, col)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uv0)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, uv1)
         .with_inserted_indices(Indices::U32(idx));
     (mesh, Heights { x_min: s.x_min, y_max: s.y_max, spacing: s.spacing, n, data: inner })
 }

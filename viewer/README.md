@@ -71,6 +71,13 @@ They're served from `/vr_fire/tiles/` (147,578 files, 1.7 GB). A patch without a
 (near the state line or coast) falls back to COG. Press **C** to compare with raw COG;
 the HUD shows megabytes downloaded from each source.
 
+**Aerial imagery** (`src/imagery.rs`). USDA/USGS orthoimagery (NAIP-based, public domain)
+from The National Map's tile service is draped on the terrain. Every patch starts with a
+statewide ~480 m/px atlas (about 1 MB), then swaps in sharper imagery by distance: ~30 m/px
+per super tile far out, ~7.5 m/px for 50/30 m tiles, ~3.8 m/px for 10 m tiles, ~1.9 m/px
+on lidar tiles. Images are stitched from whole Mercator tiles (no resampling), vertices get
+UVs from their lon/lat, mip maps are built on the CPU, and unused detail is freed.
+
 **Level of detail** (`src/terrain.rs`, levels in `vr_fire::lod`). The finest level whose
 node spacing is at least 0.4% of the view distance is used, so zooming in refines in
 steps of 1.7–3× instead of big pops:

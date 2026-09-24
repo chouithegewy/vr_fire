@@ -3,6 +3,7 @@
 //! and multiplayer through a WebSocket relay. Native and wasm (WebGPU / WebGL2).
 
 mod cog;
+mod imagery;
 mod minimap;
 mod net;
 mod terrain;
@@ -186,6 +187,8 @@ fn main() {
         (
             terrain::select_patches,
             terrain::run_jobs,
+            imagery::run,
+            imagery::apply,
             (map_input, truck::reset, mode_keys, source_toggle, cameras, truck::sync_model).chain(),
             net::sync,
             hud,
@@ -210,8 +213,12 @@ fn setup(
     mut mats: ResMut<Assets<StandardMaterial>>,
     mut map: ResMut<MapCam>,
 ) {
-    let material = mats.add(StandardMaterial { base_color: Color::WHITE, perceptual_roughness: 0.95, ..default() });
-    let terrain = Terrain::new(material);
+    // Aerial imagery: statewide atlas over California's bounding box (plus the Nevada edges
+    // of border super tiles), detail mosaics streamed per patch.
+    let ca = vr_fire::region::Region::from_geojson(include_str!("../../data/regions/california.geojson")).unwrap();
+    let imagery = imagery::Imagery::new(&ca.bbox().padded(0.4), &mut mats);
+    let terrain = Terrain::new(imagery.atlas_material.clone(), imagery.atlas);
+    commands.insert_resource(imagery);
     // World origin: centre of California's Albers extent.
     let (x, y) = terrain.albers.from_lonlat(-119.5, 37.2).unwrap();
     commands.insert_resource(WorldOrigin(DVec2::new(x.round(), y.round())));
@@ -522,6 +529,7 @@ fn hud(
     truck: Res<Truck>,
     terrain: Res<Terrain>,
     cog: Res<cog::Cog>,
+    imagery: Res<imagery::Imagery>,
     remotes: Res<net::Remotes>,
     map: Res<MapCam>,
     origin: Res<WorldOrigin>,
@@ -533,7 +541,7 @@ fn hud(
     let (bx, by) = (origin.0.x + map.focus.x as f64, origin.0.y - map.focus.z as f64);
     let (lon, lat) = terrain.albers.to_lonlat(bx, by).unwrap_or((0.0, 0.0));
     s += &format!(
-        "patches {}/{}  jobs {}   terrain [C]: {}   packed {:.1} MB ({} hit, {} COG fallback)  COG {:.1} MB ({} in flight)   {}\n",
+        "patches {}/{}  jobs {}   terrain [C]: {}   packed {:.1} MB ({} hit, {} COG fallback)  COG {:.1} MB ({} in flight)  imagery {:.1} MB ({} in flight)   {}\n",
         terrain.stats.1,
         terrain.stats.0,
         terrain.pending(),
@@ -546,6 +554,8 @@ fn hud(
         terrain.packed_misses,
         cog.bytes_fetched as f64 / 1e6,
         cog.inflight(),
+        imagery.bytes as f64 / 1e6,
+        imagery.pending(),
         if remotes.connected { format!("online as {} | {} other trucks", remotes.name, remotes.trucks.len()) } else { "offline".into() }
     );
     if *mode == Mode::Map {
