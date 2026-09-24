@@ -86,11 +86,6 @@ pub fn run_ingest(opts: &IngestOptions) -> Result<IngestReport> {
     let mut done = 0;
     for (primary, jobs) in groups {
         let group_cells: BTreeSet<SourceCell> = jobs.iter().flat_map(|j| j.cells.iter().copied()).collect();
-        for c in sources.cells() {
-            if !group_cells.contains(&c) && sources.len() >= opts.max_loaded_sources {
-                sources.remove(c);
-            }
-        }
         let to_load: Vec<(SourceCell, PathBuf)> = group_cells
             .iter()
             .filter(|c| !sources.contains(**c))
@@ -99,6 +94,9 @@ pub fn run_ingest(opts: &IngestOptions) -> Result<IngestReport> {
                 _ => None,
             })
             .collect();
+        for c in cells_to_evict(&sources.cells(), &group_cells, to_load.len(), opts.max_loaded_sources) {
+            sources.remove(c);
+        }
         let loaded: Vec<(SourceCell, Result<Raster>)> =
             to_load.par_iter().map(|(c, p)| (*c, load_source(&cache, *c, p))).collect();
         for (c, r) in loaded {
@@ -136,6 +134,23 @@ pub fn run_ingest(opts: &IngestOptions) -> Result<IngestReport> {
         eprintln!("ingest: [{done}/{total}] {} done", primary.name());
     }
     Ok(report)
+}
+
+/// Loaded sources to drop before decoding `incoming` new ones for a group, so that at most
+/// `max` rasters are resident afterwards. Only cells the group doesn't need are evicted,
+/// so peak residency is `max(max, group size)`.
+fn cells_to_evict(loaded: &[SourceCell], group: &BTreeSet<SourceCell>, incoming: usize, max: usize) -> Vec<SourceCell> {
+    let mut resident = loaded.len() + incoming;
+    loaded
+        .iter()
+        .copied()
+        .filter(|c| !group.contains(c))
+        .take_while(|_| {
+            let over = resident > max;
+            resident -= usize::from(over);
+            over
+        })
+        .collect()
 }
 
 fn is_done(index: &StoreIndex, store: &Store, t: TileId) -> bool {
@@ -186,5 +201,35 @@ fn ingest_tile(
             let (lo, hi) = min_max(&h.data);
             Ok(TileEntry { status: TileStatus::Ok, error: None, min_elevation_m: Some(lo), max_elevation_m: Some(hi), filled_samples: h.filled, sources: used })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cells(norths: std::ops::Range<i32>) -> Vec<SourceCell> {
+        norths.map(|north| SourceCell { north, west: 120 }).collect()
+    }
+
+    #[test]
+    fn eviction_makes_room_for_incoming_sources() {
+        // Previous row left 5 stale rasters; the new group needs 9 others.
+        let stale = cells(0..5);
+        let group: BTreeSet<SourceCell> = cells(10..19).into_iter().collect();
+        let evicted = cells_to_evict(&stale, &group, 9, 9);
+        assert_eq!(evicted.len(), 5, "peak would be {} rasters", stale.len() - evicted.len() + 9);
+    }
+
+    #[test]
+    fn eviction_keeps_group_cells_and_spare_capacity() {
+        let mut loaded = cells(0..5); // stale
+        loaded.extend(cells(10..14)); // needed by the group
+        let group: BTreeSet<SourceCell> = cells(10..19).into_iter().collect();
+        let evicted = cells_to_evict(&loaded, &group, 5, 9);
+        assert!(evicted.iter().all(|c| !group.contains(c)));
+        assert_eq!(loaded.len() - evicted.len() + 5, 9);
+        // Under the cap nothing is evicted, so neighbouring groups can reuse rasters.
+        assert!(cells_to_evict(&cells(0..2), &group, 3, 9).is_empty());
     }
 }

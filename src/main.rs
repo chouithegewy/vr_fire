@@ -37,8 +37,9 @@ enum Command {
         base_url: String,
         #[arg(long, default_value_t = 4)]
         download_threads: usize,
-        /// Decoded 3DEP files held in memory (~470 MB each).
-        #[arg(long, default_value_t = 6)]
+        /// Decoded 3DEP files held in memory (~470 MB each). A group of tiles can need up to
+        /// 9 files at once, so memory peaks at max(this, 9) × 470 MB (~4.2 GB at the default).
+        #[arg(long, default_value_t = 9)]
         max_loaded_sources: usize,
     },
     /// Turn store tiles into glb meshes (4 LODs), raw heights, and metadata.

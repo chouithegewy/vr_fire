@@ -67,11 +67,27 @@ pub struct SourceCache {
     dir: PathBuf,
     base_url: String,
     retry_delay: Duration,
+    response_timeout: Duration,
+    body_timeout: Duration,
 }
 
 impl SourceCache {
     pub fn new(dir: impl Into<PathBuf>, base_url: impl Into<String>) -> Self {
-        Self { dir: dir.into(), base_url: base_url.into(), retry_delay: Duration::from_secs(2) }
+        Self {
+            dir: dir.into(),
+            base_url: base_url.into(),
+            retry_delay: Duration::from_secs(2),
+            response_timeout: Duration::from_secs(60),
+            body_timeout: Duration::from_secs(30 * 60),
+        }
+    }
+
+    /// `response`: connect + headers; `body`: whole body of one request (a timed-out
+    /// download resumes from its `.part` file on the next attempt).
+    pub fn with_timeouts(mut self, response: Duration, body: Duration) -> Self {
+        self.response_timeout = response;
+        self.body_timeout = body;
+        self
     }
 
     /// Base delay between retries; attempt k waits k × delay.
@@ -130,13 +146,19 @@ impl SourceCache {
 
     fn download(&self, url: &str, dest: &Path) -> Result<Download> {
         let part = dest.with_extension("tif.part");
+        let agent: ureq::Agent = ureq::Agent::config_builder()
+            .timeout_connect(Some(self.response_timeout))
+            .timeout_recv_response(Some(self.response_timeout))
+            .timeout_recv_body(Some(self.body_timeout))
+            .build()
+            .into();
         let mut last_err = anyhow!("no attempts made");
         for attempt in 0..MAX_ATTEMPTS {
             if attempt > 0 {
                 std::thread::sleep(self.retry_delay * attempt);
             }
             let have = fs::metadata(&part).map(|m| m.len()).unwrap_or(0);
-            let mut req = ureq::get(url);
+            let mut req = agent.get(url);
             if have > 0 {
                 req = req.header("Range", format!("bytes={have}-"));
             }
@@ -335,6 +357,28 @@ mod tests {
         let c = cache(dir.path(), "http://127.0.0.1:9");
         let err = c.ensure(SourceCell { north: 39, west: 121 }).unwrap_err();
         assert!(format!("{err:#}").contains("after 5 attempts"), "{err:#}");
+    }
+
+    #[test]
+    fn stalled_download_times_out_instead_of_hanging() {
+        // Server sends headers and 3 of 1000 body bytes, then holds the socket open silently.
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        std::thread::spawn(move || {
+            let mut held = Vec::new();
+            for stream in listener.incoming() {
+                let mut stream = stream.unwrap();
+                let _ = write!(stream, "HTTP/1.1 200 OK\r\nContent-Length: 1000\r\nConnection: close\r\n\r\nabc");
+                held.push(stream);
+            }
+        });
+        let dir = tempfile::tempdir().unwrap();
+        let c = cache(dir.path(), &url).with_timeouts(Duration::from_millis(200), Duration::from_millis(200));
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = tx.send(c.ensure(SourceCell { north: 39, west: 121 }).is_err());
+        });
+        assert_eq!(rx.recv_timeout(Duration::from_secs(20)), Ok(true), "download hung instead of timing out");
     }
 
     #[test]
