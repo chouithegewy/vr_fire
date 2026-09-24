@@ -40,6 +40,15 @@ Terrain streams from USGS on demand, so the first view of an area takes a few se
 | M or Esc | Back to the map |
 | Scroll, drag | Chase-camera distance and angle |
 
+While driving:
+- A **minimap** in the corner shows California, the 20 km detailed-terrain window around
+  you, and a dot for every player.
+- **Waypoints** at the screen edge point to other players who are off-screen or more than
+  2.5 km away, with their name and distance.
+- A **network label** above each nearby truck shows live stats. Yours: round-trip time to
+  the relay, messages and bytes per second up and down, and totals. Other trucks: update
+  rate, age of their last update, jitter, and smoothing error.
+
 In multiplayer, if another truck flips yours onto its roof, it's game over; press R to
 respawn.
 
@@ -95,6 +104,7 @@ truck re-centers the world on it, so 32-bit floats stay precise under the wheels
 | Variable | Effect |
 |---|---|
 | `VR_FIRE_RELAY` | Relay URL (default `wss://chilos.dev/vr_fire/ws`), e.g. `ws://127.0.0.1:8795` for a local relay |
+| `VR_FIRE_AUTOPILOT_PLACE=1..6` | Which place the autopilot flies to (default 5, Placerville) |
 | `VR_FIRE_AUTOPILOT=<dir>` | Scripted demo: flies to Placerville, drops the truck, drives and boosts, saves screenshots to `<dir>`, then exits. Turns off vsync. |
 
 To test multiplayer locally, run `PORT=8795 cargo run --release -p relay`, then start two

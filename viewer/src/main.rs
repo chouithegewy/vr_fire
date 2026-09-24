@@ -3,6 +3,7 @@
 //! and multiplayer through a WebSocket relay. Native and wasm (WebGPU / WebGL2).
 
 mod cog;
+mod minimap;
 mod net;
 mod terrain;
 mod truck;
@@ -77,7 +78,16 @@ fn autopilot(
     if (t * 2.0) as u32 != ((t - time.delta_secs()) * 2.0) as u32 && (t >= 30.0 || (t as u32) % 3 == 0) {
         info!("autopilot t={t:.1}s step={} truck={:?} speed={:.0}km/h up_y={:.2}", *step, truck.body.pos, truck.body.vel.length() * 3.6, (truck.body.rot * Vec3::Y).y);
     }
-    let shot =|commands: &mut Commands, name: &str| {
+    // VR_FIRE_AUTOPILOT_PLACE=1..6 picks the fly-to place (default 5, Placerville).
+    let place = match std::env::var("VR_FIRE_AUTOPILOT_PLACE").as_deref() {
+        Ok("1") => KeyCode::Digit1,
+        Ok("2") => KeyCode::Digit2,
+        Ok("3") => KeyCode::Digit3,
+        Ok("4") => KeyCode::Digit4,
+        Ok("6") => KeyCode::Digit6,
+        _ => KeyCode::Digit5,
+    };
+    let shot = |commands: &mut Commands, name: &str| {
         commands.spawn(Screenshot::primary_window()).observe(save_to_disk(format!("{dir}/{name}.png")));
     };
     // (time, action)
@@ -85,7 +95,7 @@ fn autopilot(
     while *step < plan.len() && t >= plan[*step].0 {
         match plan[*step].1 {
             0 => shot(&mut commands, "1_california"),
-            1 => keys.press(KeyCode::Digit5),
+            1 => keys.press(place),
             2 => shot(&mut commands, "2_zoomed_placerville"),
             3 => drag.auto_drop = Some(map.focus),
             4 => shot(&mut commands, "3_dropped"),
@@ -107,7 +117,7 @@ fn autopilot(
         *step += 1;
     }
     if (1..3).contains(&*step) {
-        keys.release(KeyCode::Digit5);
+        keys.release(place);
     }
 }
 
@@ -173,7 +183,11 @@ fn main() {
             apply_anchors,
         ),
     );
-    app.add_systems(PostUpdate, net::labels.after(bevy::transform::TransformSystems::Propagate));
+    app.add_systems(Startup, minimap::setup.after(setup));
+    app.add_systems(
+        PostUpdate,
+        (net::labels, minimap::update, minimap::waypoints).after(bevy::transform::TransformSystems::Propagate),
+    );
     #[cfg(not(target_arch = "wasm32"))]
     app.add_systems(PreUpdate, autopilot.after(bevy::input::InputSystems));
     app.run();
@@ -221,7 +235,7 @@ fn setup(
         })),
         Transform::from_xyz(0.0, -2.0, 0.0),
     ));
-    truck::spawn_model(&mut commands, &mut meshes, &mut mats, Color::srgb(0.1, 0.75, 0.15));
+    truck::spawn_model(&mut commands, &mut meshes, &mut mats, Color::srgb(0.1, 0.75, 0.15), true);
     commands.spawn((
         Hud,
         Text::new(""),

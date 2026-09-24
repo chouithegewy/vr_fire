@@ -70,7 +70,9 @@ impl Truck {
 }
 
 /// Spawn the truck model (hidden until dropped). Returns the root entity.
-pub fn spawn_model(commands: &mut Commands, meshes: &mut Assets<Mesh>, mats: &mut Assets<StandardMaterial>, tint: Color) -> Entity {
+/// `local`: this is the player's own truck (driven by physics); remote trucks get no
+/// markers so the local-truck systems never touch them.
+pub fn spawn_model(commands: &mut Commands, meshes: &mut Assets<Mesh>, mats: &mut Assets<StandardMaterial>, tint: Color, local: bool) -> Entity {
     let paint = mats.add(StandardMaterial { base_color: tint, metallic: 0.6, perceptual_roughness: 0.3, ..default() });
     let dark = mats.add(StandardMaterial { base_color: Color::srgb(0.05, 0.05, 0.05), perceptual_roughness: 0.9, ..default() });
     let chrome = mats.add(StandardMaterial { base_color: Color::srgb(0.8, 0.8, 0.82), metallic: 1.0, perceptual_roughness: 0.15, ..default() });
@@ -85,7 +87,10 @@ pub fn spawn_model(commands: &mut Commands, meshes: &mut Assets<Mesh>, mats: &mu
     let tire = mats.add(StandardMaterial { base_color: Color::srgb(0.03, 0.03, 0.03), perceptual_roughness: 1.0, ..default() });
 
     let part = |m: Handle<Mesh>, mat: &Handle<StandardMaterial>, t: Transform| (Mesh3d(m), MeshMaterial3d(mat.clone()), t);
-    let root = commands.spawn((TruckRoot, Transform::default(), Visibility::Hidden)).id();
+    let root = commands.spawn((Transform::default(), Visibility::Hidden)).id();
+    if local {
+        commands.entity(root).insert(TruckRoot);
+    }
     let mut kids = vec![
         // Frame rails and body tub.
         commands.spawn(part(meshes.add(Cuboid::new(2.2, 0.35, 5.6)), &dark, Transform::from_xyz(0.0, -0.1, 0.0))).id(),
@@ -115,16 +120,21 @@ pub fn spawn_model(commands: &mut Commands, meshes: &mut Assets<Mesh>, mats: &mu
                 MeshMaterial3d(flame),
                 Transform::from_xyz(0.0, 0.6, 3.9).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                 Visibility::Hidden,
-                Flame,
             ))
             .id(),
     );
+    if local {
+        commands.entity(*kids.last().unwrap()).insert(Flame);
+    }
     // Four monster wheels: tire + green hub + chrome cap.
     let tire_mesh = meshes.add(Cylinder::new(WHEEL_R, 1.35));
     let hub_mesh = meshes.add(Cylinder::new(0.75, 1.4));
     let cap_mesh = meshes.add(Cylinder::new(0.3, 1.45));
     for (i, a) in WHEELS.iter().enumerate() {
-        let wheel = commands.spawn((WheelVis(i), Transform::from_translation(*a), Visibility::Inherited)).id();
+        let wheel = commands.spawn((Transform::from_translation(*a), Visibility::Inherited)).id();
+        if local {
+            commands.entity(wheel).insert(WheelVis(i));
+        }
         let axle = Transform::from_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2));
         let t = commands.spawn(part(tire_mesh.clone(), &tire, axle)).id();
         let h = commands.spawn(part(hub_mesh.clone(), &paint, axle)).id();

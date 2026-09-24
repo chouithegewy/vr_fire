@@ -196,7 +196,7 @@ pub fn sync(
                         let albers = DVec2::new(x, y);
                         let r = remotes.trucks.entry(id).or_insert_with(|| {
                             let hue = (id as f32 * 67.0) % 360.0;
-                            let entity = spawn_model(&mut commands, &mut meshes, &mut mats, Color::hsl(hue, 0.8, 0.5));
+                            let entity = spawn_model(&mut commands, &mut meshes, &mut mats, Color::hsl(hue, 0.8, 0.5), false);
                             commands.entity(entity).insert(Visibility::Inherited);
                             let beacon = commands
                                 .spawn((
