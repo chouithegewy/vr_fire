@@ -3,6 +3,7 @@
 pub mod crs;
 pub mod dem;
 pub mod grid;
+pub mod ingest;
 pub mod region;
 pub mod reproject;
 pub mod source;
