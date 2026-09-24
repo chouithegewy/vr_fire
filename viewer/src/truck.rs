@@ -7,16 +7,16 @@ use bevy::prelude::*;
 
 pub const MASS: f32 = 4000.0;
 const GRAVITY: f32 = 9.81 * 1.5;
-const WHEEL_R: f32 = 1.05;
-const REST: f32 = 0.9;
+const WHEEL_R: f32 = 1.5;
+const REST: f32 = 0.8;
 const SPRING: f32 = 95_000.0;
 const DAMP: f32 = 11_000.0;
 const ENGINE: f32 = MASS * 9.0;
 const BOOST: f32 = MASS * 32.0;
-const GRIP: f32 = 1.4;
+const GRIP: f32 = 1.15;
 const HALF: Vec3 = Vec3::new(1.5, 0.9, 2.9);
 pub const WHEELS: [Vec3; 4] =
-    [Vec3::new(-1.75, -0.35, -2.2), Vec3::new(1.75, -0.35, -2.2), Vec3::new(-1.75, -0.35, 2.2), Vec3::new(1.75, -0.35, 2.2)];
+    [Vec3::new(-2.2, -0.1, -2.4), Vec3::new(2.2, -0.1, -2.4), Vec3::new(-2.2, -0.1, 2.4), Vec3::new(2.2, -0.1, 2.4)];
 
 #[derive(Clone, Copy, Default)]
 pub struct Body {
@@ -120,9 +120,9 @@ pub fn spawn_model(commands: &mut Commands, meshes: &mut Assets<Mesh>, mats: &mu
             .id(),
     );
     // Four monster wheels: tire + green hub + chrome cap.
-    let tire_mesh = meshes.add(Cylinder::new(WHEEL_R, 1.0));
-    let hub_mesh = meshes.add(Cylinder::new(0.55, 1.05));
-    let cap_mesh = meshes.add(Cylinder::new(0.25, 1.1));
+    let tire_mesh = meshes.add(Cylinder::new(WHEEL_R, 1.35));
+    let hub_mesh = meshes.add(Cylinder::new(0.75, 1.4));
+    let cap_mesh = meshes.add(Cylinder::new(0.3, 1.45));
     for (i, a) in WHEELS.iter().enumerate() {
         let wheel = commands.spawn((WheelVis(i), Transform::from_translation(*a), Visibility::Inherited)).id();
         let axle = Transform::from_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2));
@@ -147,7 +147,7 @@ fn ground(terrain: &Terrain, origin: &WorldOrigin, p: Vec3) -> Option<(f32, Vec3
 
 fn inertia_inv_world(rot: Quat) -> Mat3 {
     let s = HALF * 2.0;
-    let i = Vec3::new(s.y * s.y + s.z * s.z, s.x * s.x + s.z * s.z, s.x * s.x + s.y * s.y) * (MASS / 12.0) * 0.6;
+    let i = Vec3::new(s.y * s.y + s.z * s.z, s.x * s.x + s.z * s.z, s.x * s.x + s.y * s.y) * (MASS / 12.0) * 1.4;
     let r = Mat3::from_quat(rot);
     r * Mat3::from_diagonal(i.recip()) * r.transpose()
 }
@@ -194,6 +194,7 @@ pub fn physics(
     let up = b.rot * Vec3::Y;
     let fwd = b.rot * Vec3::NEG_Z;
     let mut contacts = 0;
+    let mut n_sum = Vec3::ZERO;
     for (i, a) in WHEELS.iter().enumerate() {
         let anchor = b.pos + b.rot * *a;
         let down = -up;
@@ -214,7 +215,7 @@ pub fn physics(
         let r = p - b.pos;
         let vp = b.vel + b.ang.cross(r);
         let fn_mag = (SPRING * comp - DAMP * vp.dot(n)).max(0.0);
-        let mut f = n * fn_mag;
+        let f = n * fn_mag;
         // Tire: 4-wheel steer (rear counter-steers half).
         let steer = if i < 2 { t.steer } else { -t.steer * 0.5 };
         let wf = Quat::from_axis_angle(up, steer) * fwd;
@@ -235,11 +236,18 @@ pub fn physics(
         if tire.length() > cap {
             tire = tire.normalize() * cap;
         }
-        f += tire;
-        force += f;
-        torque += r.cross(f);
+        let r_tire = r - up * r.dot(up) * 0.75;
+        force += f + tire;
+        torque += r.cross(f) + r_tire.cross(tire);
+        n_sum += n;
     }
     t.grounded = contacts > 0;
+    // Anti-roll: with wheels down, lean the chassis back toward the ground normal and damp roll.
+    if contacts >= 2 {
+        let n_avg = n_sum.normalize_or_zero();
+        torque += up.cross(n_avg) * MASS * 18.0;
+        torque -= fwd * b.ang.dot(fwd) * MASS * 3.0;
+    }
     // Body corners never sink into the ground (so a flipped truck slides on its roof).
     for sx in [-1.0, 1.0] {
         for sy in [-1.0, 1.0] {
@@ -262,10 +270,14 @@ pub fn physics(
     if t.boosting {
         force += fwd * BOOST + Vec3::Y * MASS * 4.0;
     }
-    // Air control: pitch with W/S, roll with A/D.
-    if contacts == 0 && driving {
+    // Air control: pitch with W/S, yaw with A/D, and a gentle self-level so jumps land wheels-down.
+    if contacts == 0 {
         let right = b.rot * Vec3::X;
-        torque += (right * -throttle * 2.5 + fwd * -steer_in * 2.5) * MASS;
+        if driving {
+            torque += (right * -throttle * 1.5 + up * steer_in * 1.5) * MASS;
+        }
+        torque += fwd * fwd.dot(up.cross(Vec3::Y)) * MASS * 6.0;
+        torque -= fwd * b.ang.dot(fwd) * MASS * 1.5;
     }
     // Truck-vs-truck: sphere pushes against remote trucks (each client moves only itself).
     for r in remotes.trucks.values() {
@@ -333,7 +345,7 @@ pub fn sync_model(
     tf.rotation = truck.prev.rot.slerp(truck.body.rot, a);
     for (w, mut t) in &mut wheels {
         let base = WHEELS[w.0];
-        t.translation = base - Vec3::Y * (truck.wheel_len[w.0] + WHEEL_R - 0.9);
+        t.translation = base - Vec3::Y * truck.wheel_len[w.0];
         let steer = if w.0 < 2 { truck.steer } else { -truck.steer * 0.5 };
         t.rotation = Quat::from_rotation_y(steer) * Quat::from_rotation_x(-truck.spin);
     }

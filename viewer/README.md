@@ -26,15 +26,16 @@ Terrain streams from USGS on demand, so the first view of an area takes a few se
 | Right-drag | Orbit |
 | Click | Drop the truck there |
 | 1–6 | Fly to Yosemite Valley, Lake Tahoe, Mt. Shasta, Death Valley, Placerville, Los Angeles |
-| M | Back to your truck |
+| M | Back to your truck (from driving, M jumps to an aerial view over the truck) |
 
 **Driving**
 
 | Input | Action |
 |---|---|
 | W / S or ↑ / ↓ | Throttle / brake and reverse |
-| A / D or ← / → | Steer (in the air: pitch and roll) |
+| A / D or ← / → | Steer (in the air: turn left or right) |
 | Space | Mega boost (drains the boost bar, which refills over time) |
+| W / S in the air | Pitch nose down / up (the truck also levels itself gently) |
 | R | Reset upright |
 | M or Esc | Back to the map |
 | Scroll, drag | Chase-camera distance and angle |

@@ -74,8 +74,8 @@ fn autopilot(
     use bevy::render::view::screenshot::{Screenshot, save_to_disk};
     let Ok(dir) = std::env::var("VR_FIRE_AUTOPILOT") else { return };
     let t = time.elapsed_secs();
-    if (t * 2.0) as u32 != ((t - time.delta_secs()) * 2.0) as u32 && (t as u32) % 3 == 0 {
-        info!("autopilot t={t:.1}s step={} truck={:?}", *step, truck.body.pos);
+    if (t * 2.0) as u32 != ((t - time.delta_secs()) * 2.0) as u32 && (t >= 30.0 || (t as u32) % 3 == 0) {
+        info!("autopilot t={t:.1}s step={} truck={:?} speed={:.0}km/h up_y={:.2}", *step, truck.body.pos, truck.body.vel.length() * 3.6, (truck.body.rot * Vec3::Y).y);
     }
     let shot =|commands: &mut Commands, name: &str| {
         commands.spawn(Screenshot::primary_window()).observe(save_to_disk(format!("{dir}/{name}.png")));
@@ -373,10 +373,12 @@ fn map_input(
 
 fn mode_keys(keys: Res<ButtonInput<KeyCode>>, mut mode: ResMut<Mode>, truck: Res<Truck>, mut map: ResMut<MapCam>) {
     if *mode == Mode::Drive && (keys.just_pressed(KeyCode::KeyM) || keys.just_pressed(KeyCode::Escape)) {
+        // Aerial view over the truck; scroll out from there for the whole state.
         *mode = Mode::Map;
         map.focus = truck.body.pos;
-        map.dist = map.dist.min(3_000.0).max(600.0);
-        map.pitch = 0.6;
+        map.dist = 25_000.0;
+        map.pitch = 1.2;
+        map.fly = None;
     } else if *mode == Mode::Map && keys.just_pressed(KeyCode::KeyM) && truck.active {
         *mode = Mode::Drive;
     }
