@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vr_fire | California monster truck</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #8cb3e0; overflow: hidden; font-family: system-ui, sans-serif; }
+  #bevy { width: 100%; height: 100%; display: block; outline: none; }
+  #load { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center;
+          color: #fff; font-size: 20px; text-shadow: 0 1px 3px #000; pointer-events: none; }
+  #load small { font-size: 14px; opacity: .85; }
+</style>
+</head>
+<body>
+<canvas id="bevy" tabindex="0"></canvas>
+<div id="load"><div>Loading California + one green monster truck...</div><small id="api"></small></div>
+<script type="module">
+  const load = document.getElementById('load');
+  const adapter = navigator.gpu ? await navigator.gpu.requestAdapter().catch(() => null) : null;
+  const dir = adapter ? './webgpu/' : './webgl2/';
+  document.getElementById('api').textContent = (adapter ? 'WebGPU' : 'WebGL2') + ' | ~12 MB download | terrain streams from USGS 3DEP';
+  document.getElementById('bevy').focus();
+  const m = await import(dir + 'viewer.js');
+  try {
+    await m.default();
+  } catch (e) {
+    // Bevy's winit loop hands control to the browser by throwing this on purpose.
+    if (!String(e).includes('Using exceptions for control flow')) { load.textContent = 'Error: ' + e; throw e; }
+  }
+  load.remove();
+</script>
+</body>
+</html>

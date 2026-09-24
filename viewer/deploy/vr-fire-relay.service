@@ -1,0 +1,14 @@
+[Unit]
+Description=vr_fire multiplayer WebSocket relay
+After=network.target
+
+[Service]
+User=thehomiedavid
+Environment=PORT=8795
+ExecStart=/home/thehomiedavid/vr_fire/relay
+Restart=always
+RestartSec=2
+MemoryMax=64M
+
+[Install]
+WantedBy=multi-user.target
