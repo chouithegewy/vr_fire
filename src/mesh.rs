@@ -227,7 +227,7 @@ mod tests {
     fn adjacent_tiles_meet_exactly_at_every_lod() {
         // Global field sampled for two tiles sharing an edge.
         let g = |x: f32, z: f32| (x * 0.01).sin() * 40.0 + z * 0.05;
-        let west = field(|x, z| g(x, z));
+        let west = field(g);
         let east = field(|x, z| g(x + 3750.0, z));
         let wn = compute_normals(&Neighborhood { center: &west, north: None, south: None, east: Some(&east), west: None });
         let en = compute_normals(&Neighborhood { center: &east, north: None, south: None, east: None, west: Some(&west) });

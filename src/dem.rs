@@ -142,7 +142,7 @@ impl Raster {
 
 /// Value of a short GeoKey stored inline in the directory (TIFFTagLocation 0).
 fn geokey(keys: &[u16], id: u16) -> Option<u16> {
-    keys.chunks_exact(4).skip(1).find(|k| k[0] == id && k[1] == 0).map(|k| k[3])
+    keys.as_chunks::<4>().0.iter().skip(1).find(|k| k[0] == id && k[1] == 0).map(|k| k[3])
 }
 
 #[cfg(test)]

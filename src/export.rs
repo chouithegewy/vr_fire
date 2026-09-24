@@ -56,7 +56,7 @@ pub fn glb_bytes(mesh: &Mesh, name: &str) -> Vec<u8> {
         ]
     });
     let mut json_chunk = serde_json::to_vec(&doc).expect("serializable");
-    while json_chunk.len() % 4 != 0 {
+    while !json_chunk.len().is_multiple_of(4) {
         json_chunk.push(b' ');
     }
     let total = 12 + 8 + json_chunk.len() + 8 + bin.len();
