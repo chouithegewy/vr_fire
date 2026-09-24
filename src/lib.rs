@@ -2,6 +2,7 @@
 
 pub mod crs;
 pub mod dem;
+pub mod export;
 pub mod grid;
 pub mod ingest;
 pub mod mesh;
