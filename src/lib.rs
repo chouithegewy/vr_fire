@@ -2,3 +2,4 @@
 
 pub mod crs;
 pub mod grid;
+pub mod region;
