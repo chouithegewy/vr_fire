@@ -1,0 +1,18 @@
+[Unit]
+Description=vr_fire on-demand 1 m lidar tiles (OpenTopography)
+After=network.target
+
+[Service]
+User=thehomiedavid
+# OPENTOPOGRAPHY_API_KEY lives only here (mode 600), never in the web app.
+EnvironmentFile=/home/thehomiedavid/vr_fire/hires.env
+Environment=PORT=8797
+Environment=HIRES_CACHE=/home/thehomiedavid/vr_fire/hires-cache
+Environment=HIRES_DAILY_CAP=150
+ExecStart=/home/thehomiedavid/vr_fire/hires
+Restart=always
+RestartSec=2
+MemoryMax=700M
+
+[Install]
+WantedBy=multi-user.target

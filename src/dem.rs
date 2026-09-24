@@ -56,9 +56,13 @@ impl Raster {
             .or_else(|| geokey(&keys, GEOGRAPHIC_TYPE))
             .context("GeoKeys carry no EPSG code")?;
         let half = if geokey(&keys, GT_RASTER_TYPE) == Some(RASTER_PIXEL_IS_POINT) { 0.5 } else { 0.0 };
-        let data = match dec.read_image().with_context(|| format!("decode {}", path.display()))? {
-            DecodingResult::F32(v) => v,
-            _ => bail!("{}: only 32-bit float rasters are supported", path.display()),
+        let data = match dec.read_image() {
+            Ok(DecodingResult::F32(v)) => v,
+            Ok(_) => bail!("{}: only 32-bit float rasters are supported", path.display()),
+            // The tiff crate's whole-image read rejects some valid 3DEP files (LZW blocks
+            // without an end code); assemble those block by block instead.
+            Err(e) => read_blocks(&mut dec, path, width as usize, height as usize)
+                .with_context(|| format!("decode {} (whole-image read failed: {e})", path.display()))?,
         };
         let (pixel_w, pixel_h) = (scale[0], scale[1]);
         let (i, j, x, y) = (tie[0], tie[1], tie[3], tie[4]);
@@ -140,6 +144,93 @@ impl Raster {
     }
 }
 
+/// Assemble a tiled f32 image one block at a time; blocks the tiff crate rejects are
+/// decoded leniently from their raw bytes.
+fn read_blocks(dec: &mut Decoder<BufReader<File>>, path: &Path, width: usize, height: usize) -> Result<Vec<f32>> {
+    let (tw, th) = dec.chunk_dimensions();
+    let (tw, th) = (tw as usize, th as usize);
+    let offsets = dec.get_tag_u64_vec(Tag::TileOffsets).context("not a tiled TIFF")?;
+    let counts = dec.get_tag_u64_vec(Tag::TileByteCounts)?;
+    let predictor = dec.get_tag_unsigned::<u16>(Tag::Predictor).unwrap_or(1);
+    let across = width.div_ceil(tw);
+    let mut raw_file = File::open(path)?;
+    let mut out = vec![0f32; width * height];
+    for k in 0..offsets.len() {
+        let block = match dec.read_chunk(k as u32) {
+            Ok(DecodingResult::F32(v)) => {
+                // The tiff crate crops edge blocks; re-pad to the full block width.
+                let (dw, dh) = dec.chunk_data_dimensions(k as u32);
+                let mut full = vec![0f32; tw * th];
+                for r in 0..dh as usize {
+                    full[r * tw..r * tw + dw as usize].copy_from_slice(&v[r * dw as usize..(r + 1) * dw as usize]);
+                }
+                full
+            }
+            _ => {
+                use std::io::{Read, Seek, SeekFrom};
+                let mut raw = vec![0u8; counts[k] as usize];
+                raw_file.seek(SeekFrom::Start(offsets[k]))?;
+                raw_file.read_exact(&mut raw)?;
+                decode_lzw_f32_chunk(&raw, tw, th, predictor).with_context(|| format!("block {k}"))?
+            }
+        };
+        let (bx, by) = (k % across, k / across);
+        for r in 0..th {
+            let y = by * th + r;
+            if y >= height {
+                break;
+            }
+            let x0 = bx * tw;
+            let n = tw.min(width - x0);
+            out[y * width + x0..y * width + x0 + n].copy_from_slice(&block[r * tw..r * tw + n]);
+        }
+    }
+    Ok(out)
+}
+
+/// Lenient decode of one LZW-compressed f32 block (`width × height`, little-endian file).
+///
+/// Some 3DEP files have LZW blocks without the end-of-information code. libtiff and GDAL
+/// accept those; the tiff crate rejects them. This decodes until the block's full size is
+/// produced, then undoes the TIFF predictor (1 = none, 3 = floating point).
+pub fn decode_lzw_f32_chunk(raw: &[u8], width: usize, height: usize, predictor: u16) -> Result<Vec<f32>> {
+    let row_bytes = width * 4;
+    let mut buf = vec![0u8; row_bytes * height];
+    let mut dec = weezl::decode::Decoder::with_tiff_size_switch(weezl::BitOrder::Msb, 8);
+    let (mut inp, mut outp) = (0, 0);
+    while outp < buf.len() {
+        let res = dec.decode_bytes(&raw[inp..], &mut buf[outp..]);
+        inp += res.consumed_in;
+        outp += res.consumed_out;
+        match res.status {
+            Ok(weezl::LzwStatus::Ok) if res.consumed_in + res.consumed_out > 0 => {}
+            // Input ran out (no end code) or end code reached: stop and check the size.
+            _ => break,
+        }
+    }
+    if outp != buf.len() {
+        bail!("LZW block produced {outp} of {} bytes", buf.len());
+    }
+    Ok(match predictor {
+        1 => buf.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect(),
+        3 => {
+            // Floating-point predictor (TIFF Tech Note 3): each row holds the samples' bytes
+            // split by significance (most significant first), then byte-wise differenced.
+            let mut out = Vec::with_capacity(width * height);
+            for row in buf.chunks_exact_mut(row_bytes) {
+                for i in 1..row_bytes {
+                    row[i] = row[i].wrapping_add(row[i - 1]);
+                }
+                for i in 0..width {
+                    out.push(f32::from_be_bytes([row[i], row[width + i], row[2 * width + i], row[3 * width + i]]));
+                }
+            }
+            out
+        }
+        p => bail!("unsupported TIFF predictor {p}"),
+    })
+}
+
 /// Value of a short GeoKey stored inline in the directory (TIFFTagLocation 0).
 fn geokey(keys: &[u16], id: u16) -> Option<u16> {
     keys.as_chunks::<4>().0.iter().skip(1).find(|k| k[0] == id && k[1] == 0).map(|k| k[3])
@@ -219,5 +310,51 @@ mod tests {
         r.write_geotiff(&path, false).unwrap();
         let back = Raster::read_geotiff(&path).unwrap();
         assert_eq!((back.width, back.height), (side, side));
+    }
+}
+
+#[cfg(test)]
+mod lenient_tests {
+    use super::*;
+
+    /// n35w120 has LZW blocks without an end-of-information code; the tiff crate rejects
+    /// them, GDAL accepts them. Every block must decode, matching the tiff crate wherever
+    /// it succeeds. Skips when the cached file is absent.
+    #[test]
+    fn decodes_blocks_missing_the_lzw_end_code() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("cache/USGS_13_n35w120.tif");
+        let Ok(file) = std::fs::read(&path) else { return };
+        let mut dec = Decoder::new(std::io::Cursor::new(&file)).unwrap().with_limits(Limits::unlimited());
+        let offsets = dec.get_tag_u64_vec(Tag::TileOffsets).unwrap();
+        let counts = dec.get_tag_u64_vec(Tag::TileByteCounts).unwrap();
+        let predictor = dec.get_tag_unsigned::<u16>(Tag::Predictor).unwrap_or(1);
+        let (tw, th) = dec.chunk_dimensions();
+        let (mut strict_failures, mut compared) = (0, 0);
+        for (k, (&o, &n)) in offsets.iter().zip(&counts).enumerate() {
+            let raw = &file[o as usize..(o + n) as usize];
+            let lenient = decode_lzw_f32_chunk(raw, tw as usize, th as usize, predictor).unwrap();
+            match dec.read_chunk(k as u32) {
+                Ok(DecodingResult::F32(strict)) => {
+                    let (dw, _) = dec.chunk_data_dimensions(k as u32);
+                    // The tiff crate crops edge tiles to the image; compare the overlap.
+                    for (r, row) in strict.chunks(dw as usize).enumerate() {
+                        assert_eq!(row, &lenient[r * tw as usize..r * tw as usize + dw as usize], "block {k} row {r}");
+                    }
+                    compared += 1;
+                }
+                _ => strict_failures += 1,
+            }
+        }
+        assert_eq!(strict_failures, 0);
+        assert_eq!(compared, offsets.len());
+        // The tiff crate's whole-image read fails on this file; read_geotiff must not.
+        let r = Raster::read_geotiff(&path).unwrap();
+        assert_eq!((r.width, r.height), (10812, 10812));
+        let (c, row) = (5000usize, 7000usize);
+        let (bx, by) = (c / tw as usize, row / th as usize);
+        let k = by * (10812usize).div_ceil(tw as usize) + bx;
+        let (o, n) = (offsets[k] as usize, counts[k] as usize);
+        let block = decode_lzw_f32_chunk(&file[o..o + n], tw as usize, th as usize, predictor).unwrap();
+        assert_eq!(r.data[row * 10812 + c], block[(row % th as usize) * tw as usize + c % tw as usize]);
     }
 }

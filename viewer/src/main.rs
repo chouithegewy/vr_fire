@@ -17,6 +17,10 @@ use bevy::window::{PresentMode, PrimaryWindow};
 use terrain::Terrain;
 use truck::Truck;
 
+const WATER_Y: f32 = -150.0;
+const CHASE_PITCH: f32 = 0.28;
+const WEBGL2: bool = cfg!(all(target_arch = "wasm32", not(feature = "webgpu")));
+
 /// EPSG:5070 coordinate of world (0, _, 0). World: +X east, +Y up, +Z south.
 #[derive(Resource)]
 pub struct WorldOrigin(pub DVec2);
@@ -49,6 +53,8 @@ struct ChaseCam {
     dist: f32,
     yaw: f32,
     pitch: f32,
+    /// Seconds since the mouse last moved the camera.
+    idle: f32,
 }
 
 #[derive(Resource, Default)]
@@ -91,14 +97,18 @@ fn autopilot(
         commands.spawn(Screenshot::primary_window()).observe(save_to_disk(format!("{dir}/{name}.png")));
     };
     // (time, action)
-    let plan: [(f32, u8); 12] = [(8.0, 0), (9.0, 1), (20.0, 2), (21.0, 3), (30.0, 4), (30.5, 5), (34.5, 6), (35.0, 7), (37.0, 8), (38.0, 9), (41.0, 10), (43.0, 11)];
+    let plan: [(f32, u8); 13] = [(8.0, 0), (9.0, 1), (20.0, 2), (21.0, 3), (22.0, 12), (30.0, 4), (30.5, 5), (34.5, 6), (35.0, 7), (37.0, 8), (38.0, 9), (41.0, 10), (43.0, 11)];
     while *step < plan.len() && t >= plan[*step].0 {
         match plan[*step].1 {
             0 => shot(&mut commands, "1_california"),
             1 => keys.press(place),
             2 => shot(&mut commands, "2_zoomed_placerville"),
             3 => drag.auto_drop = Some(map.focus),
-            4 => shot(&mut commands, "3_dropped"),
+            12 => keys.press(KeyCode::KeyF), // request 1 m lidar under the truck
+            4 => {
+                keys.release(KeyCode::KeyF);
+                shot(&mut commands, "3_dropped");
+            }
             5 => keys.press(KeyCode::KeyW),
             6 => shot(&mut commands, "4_driving"),
             7 => keys.press(KeyCode::Space),
@@ -164,7 +174,7 @@ fn main() {
     .insert_resource(Time::<Fixed>::from_hz(120.0))
     .insert_resource(Mode::Map)
     .insert_resource(MapCam { focus: Vec3::ZERO, yaw: 0.0, pitch: 1.2, dist: 1_300_000.0, fly: None })
-    .insert_resource(ChaseCam { dist: 16.0, yaw: 0.0, pitch: 0.28 })
+    .insert_resource(ChaseCam { dist: 16.0, yaw: 0.0, pitch: CHASE_PITCH, idle: 0.0 })
     .init_resource::<Drag>()
     .init_resource::<Truck>()
     .init_resource::<cog::Cog>()
@@ -176,9 +186,10 @@ fn main() {
         (
             terrain::select_patches,
             terrain::run_jobs,
-            (map_input, truck::reset, mode_keys, cameras, truck::sync_model).chain(),
+            (map_input, truck::reset, mode_keys, source_toggle, cameras, truck::sync_model).chain(),
             net::sync,
             hud,
+            cursor_lock,
             water_follow,
             apply_anchors,
         ),
@@ -210,7 +221,8 @@ fn setup(
     commands.spawn((
         Camera3d::default(),
         Projection::Perspective(PerspectiveProjection { fov: 55f32.to_radians(), near: 0.5, far: 5.0e6, ..default() }),
-        Msaa::Sample4,
+        // WebGL2 (no WebGPU in the browser) gets lighter settings: 2× MSAA, one shadow cascade.
+        if WEBGL2 { Msaa::Sample2 } else { Msaa::Sample4 },
         DistanceFog {
             color: Color::srgba(0.62, 0.74, 0.88, 1.0),
             falloff: FogFalloff::Linear { start: 50_000.0, end: 400_000.0 },
@@ -220,7 +232,7 @@ fn setup(
     ));
     commands.spawn((
         DirectionalLight { illuminance: 12_000.0, shadow_maps_enabled: true, ..default() },
-        CascadeShadowConfigBuilder { num_cascades: 3, first_cascade_far_bound: 40.0, maximum_distance: 2_000.0, ..default() }.build(),
+        CascadeShadowConfigBuilder { num_cascades: if WEBGL2 { 1 } else { 3 }, first_cascade_far_bound: 40.0, maximum_distance: 2_000.0, ..default() }.build(),
         Transform::from_rotation(Quat::from_euler(EulerRot::YXZ, 2.4, -0.75, 0.0)),
     ));
     commands.insert_resource(GlobalAmbientLight { brightness: 900.0, ..default() });
@@ -229,11 +241,14 @@ fn setup(
         Mesh3d(meshes.add(Plane3d::default().mesh().size(4_000_000.0, 4_000_000.0))),
         MeshMaterial3d(mats.add(StandardMaterial {
             base_color: Color::srgb(0.08, 0.28, 0.45),
-            perceptual_roughness: 0.15,
+            perceptual_roughness: 0.35,
             metallic: 0.1,
             ..default()
         })),
-        Transform::from_xyz(0.0, -2.0, 0.0),
+        // Well below any land (Death Valley is −86 m) and above the −300 m ocean floor, so
+        // water and terrain never fight for the same depth.
+        Transform::from_xyz(0.0, WATER_Y, 0.0),
+        bevy::light::NotShadowReceiver,
     ));
     truck::spawn_model(&mut commands, &mut meshes, &mut mats, Color::srgb(0.1, 0.75, 0.15), true);
     commands.spawn((
@@ -263,7 +278,7 @@ fn cursor_ground(
     origin: &WorldOrigin,
 ) -> Option<Vec3> {
     let ray = cam.0.viewport_to_world(cam.1, window.cursor_position()?).ok()?;
-    let h = |p: Vec3| terrain.height_at(origin.0.x + p.x as f64, origin.0.y - p.z as f64).map(|v| v.0).unwrap_or(0.0).max(-2.0);
+    let h = |p: Vec3| terrain.height_at(origin.0.x + p.x as f64, origin.0.y - p.z as f64).map(|v| v.0).unwrap_or(0.0).max(WATER_Y);
     let mut t = 0.0f32;
     let mut prev = 0.0f32;
     for _ in 0..600 {
@@ -297,7 +312,7 @@ fn map_input(
     scroll: Res<AccumulatedMouseScroll>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cams: Query<(&Camera, &GlobalTransform)>,
-    terrain: Res<Terrain>,
+    mut terrain: ResMut<Terrain>,
     mut origin: ResMut<WorldOrigin>,
     mut map: ResMut<MapCam>,
     mut chase: ResMut<ChaseCam>,
@@ -312,10 +327,28 @@ fn map_input(
         MouseScrollUnit::Pixel => scroll.delta.y / 60.0,
     };
     if *mode == Mode::Drive {
+        if keys.just_pressed(KeyCode::KeyF) && truck.active {
+            let p = truck.body.pos;
+            let t = terrain.grid.tile_containing(origin.0.x + p.x as f64, origin.0.y - p.z as f64);
+            terrain.request_hires(t);
+        }
         chase.dist = (chase.dist * 0.88f32.powf(wheel)).clamp(6.0, 400.0);
-        if mouse.pressed(MouseButton::Right) || mouse.pressed(MouseButton::Left) {
-            chase.yaw -= motion.delta.x * 0.005;
-            chase.pitch = (chase.pitch + motion.delta.y * 0.004).clamp(-0.1, 1.4);
+        // The pointer is locked while driving: plain mouse movement orbits the camera.
+        let dt = time.delta_secs();
+        if motion.delta.length() > 0.5 {
+            chase.yaw -= motion.delta.x * 0.003;
+            chase.pitch = (chase.pitch + motion.delta.y * 0.003).clamp(-0.1, 1.4);
+            chase.idle = 0.0;
+        } else {
+            chase.idle += dt;
+        }
+        // Mouse still and driving forward: swing back behind the truck.
+        let forward_speed = truck.body.vel.dot(truck.forward());
+        if chase.idle > 1.0 && forward_speed > 2.0 {
+            let k = 1.0 - (-dt * 2.5).exp();
+            let yaw = (chase.yaw + std::f32::consts::PI).rem_euclid(std::f32::consts::TAU) - std::f32::consts::PI;
+            chase.yaw = yaw * (1.0 - k);
+            chase.pitch += (CHASE_PITCH - chase.pitch) * k;
         }
         return;
     }
@@ -366,7 +399,15 @@ fn map_input(
         map.yaw -= motion.delta.x * 0.005;
         map.pitch = (map.pitch + motion.delta.y * 0.004).clamp(0.08, 1.55);
     }
-    let clicked = mouse.just_released(MouseButton::Left) && drag.moved < 6.0;
+    let shift = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
+    let clicked = mouse.just_released(MouseButton::Left) && drag.moved < 6.0 && !shift;
+    // Shift+click or F: fetch 1 m lidar for the tile under the cursor.
+    if (mouse.just_released(MouseButton::Left) && drag.moved < 6.0 && shift) || keys.just_pressed(KeyCode::KeyF) {
+        if let Some(hit) = cursor_ground(window, cam, &terrain, &origin) {
+            let t = terrain.grid.tile_containing(origin.0.x + hit.x as f64, origin.0.y - hit.z as f64);
+            terrain.request_hires(t);
+        }
+    }
     let auto = drag.auto_drop.take();
     if clicked || keys.just_pressed(KeyCode::KeyT) || auto.is_some() {
         if let Some(hit) = auto.or_else(|| cursor_ground(window, cam, &terrain, &origin)) {
@@ -383,6 +424,29 @@ fn map_input(
     // Keep the orbit focus on the ground.
     if let Some((h, _)) = terrain.height_at(origin.0.x + map.focus.x as f64, origin.0.y - map.focus.z as f64) {
         map.focus.y += (h.max(0.0) - map.focus.y) * (time.delta_secs() * 4.0).min(1.0);
+    }
+}
+
+/// C switches terrain between compressed `.vrh` patches and raw USGS COG.
+fn source_toggle(keys: Res<ButtonInput<KeyCode>>, mut terrain: ResMut<Terrain>, mut commands: Commands) {
+    if keys.just_pressed(KeyCode::KeyC) {
+        let next = match terrain.source {
+            terrain::Source::Compressed => terrain::Source::Cog,
+            terrain::Source::Cog => terrain::Source::Compressed,
+        };
+        terrain.set_source(next, &mut commands);
+    }
+}
+
+/// Lock and hide the pointer while driving (mouse steers the camera); free it on the map.
+fn cursor_lock(mode: Res<Mode>, mut cursor: Query<&mut bevy::window::CursorOptions, With<PrimaryWindow>>) {
+    if !mode.is_changed() {
+        return;
+    }
+    if let Ok(mut c) = cursor.single_mut() {
+        let driving = *mode == Mode::Drive;
+        c.grab_mode = if driving { bevy::window::CursorGrabMode::Locked } else { bevy::window::CursorGrabMode::None };
+        c.visible = !driving;
     }
 }
 
@@ -469,17 +533,24 @@ fn hud(
     let (bx, by) = (origin.0.x + map.focus.x as f64, origin.0.y - map.focus.z as f64);
     let (lon, lat) = terrain.albers.to_lonlat(bx, by).unwrap_or((0.0, 0.0));
     s += &format!(
-        "patches {}/{}  jobs {}  fetch {} ({:.1} MB)   {}\n",
+        "patches {}/{}  jobs {}   terrain [C]: {}   packed {:.1} MB ({} hit, {} COG fallback)  COG {:.1} MB ({} in flight)   {}\n",
         terrain.stats.1,
         terrain.stats.0,
         terrain.pending(),
-        cog.inflight(),
+        match terrain.source {
+            terrain::Source::Compressed => "compressed .vrh",
+            terrain::Source::Cog => "USGS COG (raw f32)",
+        },
+        terrain.packed_bytes as f64 / 1e6,
+        terrain.packed_hits,
+        terrain.packed_misses,
         cog.bytes_fetched as f64 / 1e6,
+        cog.inflight(),
         if remotes.connected { format!("online as {} | {} other trucks", remotes.name, remotes.trucks.len()) } else { "offline".into() }
     );
     if *mode == Mode::Map {
         s += &format!("MAP  {lat:.4} N {:.4} W  view {:.1} km\n", -lon, map.dist / 1000.0);
-        s += "scroll zoom | left-drag pan | right-drag orbit | CLICK to drop the monster truck | 1-6 fly to places";
+        s += "scroll zoom | left-drag pan | right-drag orbit | CLICK to drop the monster truck | SHIFT+CLICK or F: 1 m lidar | 1-6 fly to places";
         if truck.active {
             s += " | M back to truck";
         }
@@ -490,11 +561,24 @@ fn hud(
         let kmh = truck.body.vel.length() * 3.6;
         let fuel = (truck.boost_fuel * 20.0) as usize;
         s += &format!(
-            "DRIVE  {kmh:.0} km/h   MEGA BOOST [{}{}]{}\nWASD drive | SPACE mega boost | R reset | M map | scroll/drag camera",
+            "DRIVE  {kmh:.0} km/h   MEGA BOOST [{}{}]{}\nWASD drive | SPACE mega boost | R reset | F 1 m lidar here | M map | mouse look, scroll zoom",
             "#".repeat(fuel),
             "-".repeat(20 - fuel),
             if truck.waiting_for_ground { "   loading 10 m terrain…" } else { "" }
         );
+    }
+    if !terrain.hires.is_empty() {
+        let mut items: Vec<_> = terrain.hires.iter().collect();
+        items.sort_by_key(|(t, _)| (t.ty, t.tx));
+        s += "\n1 m lidar:";
+        for (t, st) in items.iter().rev().take(4) {
+            s += &match st {
+                terrain::HiresState::Waiting { age, .. } => format!("  {t} fetching + processing on server {age:.0}s"),
+                terrain::HiresState::Building => format!("  {t} building mesh"),
+                terrain::HiresState::Ready => format!("  {t} ready (3.75 m)"),
+                terrain::HiresState::Unavailable(m) => format!("  {t} none: {m}"),
+            };
+        }
     }
     for (line, _) in &remotes.log {
         s += &format!("\n{line}");

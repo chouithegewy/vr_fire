@@ -1,0 +1,11 @@
+[package]
+name = "hires"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vr_fire = { path = "..", default-features = false }
+tiny_http = "0.12"
+ureq = "3"
+anyhow = "1"
+proj4rs = { version = "0.2", default-features = false }

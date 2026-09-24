@@ -25,6 +25,8 @@ Terrain streams from USGS on demand, so the first view of an area takes a few se
 | Left-drag | Pan |
 | Right-drag | Orbit |
 | Click | Drop the truck there |
+| Shift+click or F | Fetch 1 m lidar for that 3.75 km tile (about 30 s on first request, then cached) |
+| C | Switch terrain between compressed tiles and raw USGS COG |
 | 1–6 | Fly to Yosemite Valley, Lake Tahoe, Mt. Shasta, Death Valley, Placerville, Los Angeles |
 | M | Back to your truck (from driving, M jumps to an aerial view over the truck) |
 
@@ -38,7 +40,9 @@ Terrain streams from USGS on demand, so the first view of an area takes a few se
 | W / S in the air | Pitch nose down / up (the truck also levels itself gently) |
 | R | Reset upright |
 | M or Esc | Back to the map |
-| Scroll, drag | Chase-camera distance and angle |
+| Mouse (pointer locked) | Look around; the camera swings back behind the truck when you drive and leave the mouse still |
+| Scroll | Chase-camera distance |
+| F | Fetch 1 m lidar for the tile under the truck |
 
 While driving:
 - A **minimap** in the corner shows California, the 20 km detailed-terrain window around
@@ -60,14 +64,32 @@ reads each file's header, then fetches only the 512×512 pieces it needs with HT
 requests. Each file has six resolution levels (about 10 m down to 320 m), so a zoomed-out
 view downloads only coarse pieces. No terrain is hosted on our server (`src/cog.rs`).
 
-**Level of detail** (`src/terrain.rs`):
+**Compressed tiles (default).** `vr_fire pack` turns the 10 m store (all of California)
+into `.vrh` patches at every level. Each patch is quantized (0.25–1 m steps), 2D-predicted
+and Brotli-compressed (`vr_fire::codec`); a 10 m tile is ~49 KB versus ~570 KB as floats.
+They're served from `/vr_fire/tiles/` (147,578 files, 1.7 GB). A patch without a file
+(near the state line or coast) falls back to COG. Press **C** to compare with raw COG;
+the HUD shows megabytes downloaded from each source.
 
-| Patch | Size | Node spacing | USGS level used | When shown |
-|---|---|---|---|---|
-| Super tile | 37.5 km | 750 m | ~320 m | camera farther than 45 km |
-| Grid tile | 3.75 km | 150 m | ~80 m | within 45 km |
-| Grid tile | 3.75 km | 30 m | ~20 m | within 10 km |
-| Grid tile | 3.75 km | 10 m | ~10 m | within 3 km |
+**Level of detail** (`src/terrain.rs`, levels in `vr_fire::lod`). The finest level whose
+node spacing is at least 0.4% of the view distance is used, so zooming in refines in
+steps of 1.7–3× instead of big pops:
+
+| Patch | Size | Node spacing | Used within about |
+|---|---|---|---|
+| Super tile | 37.5 km | 750 m | everywhere beyond 62.5 km |
+| Grid tile | 3.75 km | 250 m | 62.5 km |
+| Grid tile | 3.75 km | 150 m | 37.5 km |
+| Grid tile | 3.75 km | 50 m | 12.5 km |
+| Grid tile | 3.75 km | 30 m | 7.5 km |
+| Grid tile | 3.75 km | 10 m | 2.5 km |
+| Lidar tile (on request) | 3.75 km | 3.75 m | 15 km |
+
+**1 m lidar on request** (`../hires/`). Shift+click asks the `hires` service on the
+server for that tile. The service calls OpenTopography for USGS 1 m lidar, resamples it
+to 3.75 m on our grid, and caches the `.vrh`. The viewer polls and keeps running
+meanwhile; the HUD shows progress. The API key stays on the server. Tile IDs only, one
+job at a time, 150 OpenTopography calls a day at most.
 
 - Grid tiles are the same EPSG:5070 tiles the pipeline produces, aligned to the ML team's
   30 m grid.

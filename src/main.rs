@@ -7,6 +7,7 @@ use vr_fire::bake::{BakeOptions, run_bake};
 use vr_fire::crs::Albers;
 use vr_fire::grid::{GridSpec, TileId, TileRange, cell_to_tile};
 use vr_fire::ingest::{IngestOptions, run_ingest};
+use vr_fire::pack::{PackOptions, run_pack};
 use vr_fire::source::USGS_13_BASE_URL;
 
 #[derive(Parser)]
@@ -52,6 +53,13 @@ enum Command {
         #[arg(long, default_value = "tiles")]
         out: PathBuf,
     },
+    /// Pack store tiles into compressed .vrh patches for the web viewer (every LOD).
+    Pack {
+        #[arg(long, default_value = "store")]
+        store: PathBuf,
+        #[arg(long, default_value = "packed")]
+        out: PathBuf,
+    },
     /// Show the tile and 30 m ML cell containing a lon/lat.
     Locate {
         #[arg(long, allow_hyphen_values = true)]
@@ -82,6 +90,11 @@ fn main() -> Result<ExitCode> {
             let r = run_bake(&BakeOptions { store_dir: store, out_dir: out, tiles })?;
             println!("bake: {} baked, {} empty, {} failed", r.baked, r.skipped_empty, r.failed.len());
             r.failed
+        }
+        Command::Pack { store, out } => {
+            let r = run_pack(&PackOptions { store_dir: store, out_dir: out })?;
+            println!("pack: {} files, {:.1} MB, {} patches skipped (missing neighbours; viewer uses COG)", r.files, r.bytes as f64 / 1e6, r.skipped);
+            vec![]
         }
         Command::Locate { lon, lat } => {
             locate(lon, lat)?;
