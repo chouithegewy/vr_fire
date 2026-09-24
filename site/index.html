@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>David Childs</title>
+<meta name="description" content="David Childs, computer science student at Cal State LA, building vr_fire, a VR wildfire simulator capstone.">
+<style>
+  :root {
+    --bg: #e4e2e7;
+    --text: #57525e;
+    --dim: #86808d;
+    --rule: #d3cfd8;
+    --purple: #7b5e9c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #252228;
+      --text: #a7a1ae;
+      --dim: #7a7481;
+      --rule: #3a3540;
+      --purple: #a58bc4;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    color: var(--text);
+    font: 18px/1.65 Charter, "Bitstream Charter", "Iowan Old Style", "Sitka Text", Cambria, Georgia, serif;
+    max-width: 34rem;
+    margin: 0 auto;
+    padding: 18vh 1.5rem 12vh;
+  }
+  h1 { font-size: 1.25em; font-weight: 400; }
+  h2 { font-size: 1.4em; font-weight: 400; color: var(--purple); }
+  p { margin-top: 0.6rem; }
+  a { color: var(--purple); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+  a:hover { text-decoration-thickness: 2px; }
+  a:focus-visible { outline: 2px solid var(--purple); outline-offset: 3px; border-radius: 2px; }
+  ::selection { background: var(--purple); color: var(--bg); }
+  .me p { color: var(--dim); margin-top: 0.15rem; }
+  .capstone {
+    margin: 3.2rem 0;
+    padding-left: 1.25rem;
+    border-left: 2px solid var(--purple);
+  }
+  .capstone p { font-size: 1.05em; }
+  .capstone .links { margin-top: 1rem; }
+  .capstone .links a { margin-right: 1.25rem; white-space: nowrap; }
+  .side { color: var(--dim); }
+  .contact {
+    margin-top: 3.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    color: var(--dim);
+  }
+  .contact a { margin-right: 1.25rem; }
+</style>
+</head>
+<body>
+<header class="me">
+  <h1>David Childs</h1>
+  <p>Computer science student at Cal State LA.</p>
+</header>
+
+<main>
+  <section class="capstone" aria-labelledby="vr-fire">
+    <h2 id="vr-fire">vr_fire</h2>
+    <p>My capstone project: a VR wildfire simulator for California, part of a larger effort that uses machine learning to predict where a fire will spread.</p>
+    <p>I'm building the terrain. It turns USGS elevation data into 3D ground on the same 30&nbsp;m grid the model predicts on, so a forecast lines up with the hills it's burning across.</p>
+    <p class="links">
+      <a href="/vr_fire/">Drive the terrain in your browser</a>
+      <a href="https://github.com/chouithegewy/vr_fire">Source on GitHub</a>
+    </p>
+  </section>
+
+  <p class="side">On the side, I'm fiddling with getting Super Smash Bros. Melee running natively in the browser with wasm. <a href="/ssbm/">Where it's at</a>.</p>
+</main>
+
+<footer class="contact">
+  <a href="https://github.com/chouithegewy">github.com/chouithegewy</a>
+  <a href="mailto:combatburrito@gmail.com">combatburrito@gmail.com</a>
+</footer>
+</body>
+</html>
