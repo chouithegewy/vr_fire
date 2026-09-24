@@ -38,6 +38,16 @@ blender --python scripts/blender_import_tiles.py
 
 Or open the script in Blender's Scripting tab and click Run. It imports every baked tile in `tiles/`, places each one using its JSON bounds, and widens the viewport clip distance. Edit `LOD` and `Z_EXAGGERATION` at the top of the script to change detail level and vertical scale. Press Home in the viewport to frame the terrain.
 
+## Other crates in this repo
+
+- [`viewer/`](viewer/README.md): Bevy app (native and web) for all of California's
+  terrain, with a drivable monster truck and multiplayer. Live at
+  https://chilos.dev/vr_fire/
+- [`relay/`](relay/src/main.rs): the viewer's multiplayer WebSocket relay.
+- [`compress-lab/`](compress-lab/README.md): benchmark of terrain-height compression
+  methods (up to 18× at 50 cm error).
+- `site/`: source of the chilos.dev home page.
+
 ## Conventions
 
 - Tiles are 3,750 m square: 10×10 ML windows (375 m), 125×125 ML cells (30 m).
