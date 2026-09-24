@@ -542,7 +542,8 @@ mod tests {
         assert_eq!(h.at(0.0, 100.0), Some(0.0));
         assert_eq!(h.at(10.0, 90.0), Some(40.0));
         assert_eq!(h.at(5.0, 100.0), Some(5.0));
-        assert!((h.at(7.5, 92.5).unwrap() - 32.5).abs() < 1e-4); // NE-SW diagonal split, lower-right triangle
+        // Lower-right triangle (b, c, d): 40 − 20·0.25 − 30·0.25. Bilinear would give 17.5.
+        assert!((h.at(7.5, 92.5).unwrap() - 27.5).abs() < 1e-4);
         assert_eq!(h.at(-1.0, 100.0), None);
     }
 
