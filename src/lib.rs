@@ -6,3 +6,4 @@ pub mod grid;
 pub mod region;
 pub mod reproject;
 pub mod source;
+pub mod store;
