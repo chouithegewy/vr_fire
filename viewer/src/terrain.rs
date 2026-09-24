@@ -176,7 +176,7 @@ pub struct Terrain {
     supers: Vec<(i64, i64)>,
     built: HashMap<Patch, Built>,
     jobs: Vec<Job>,
-    material: Handle<StandardMaterial>,
+    material: Handle<crate::imagery::TerrainMaterial>,
     /// Statewide imagery atlas (UV0).
     atlas: MosaicKey,
     since_update: f32,
@@ -231,7 +231,7 @@ fn packed_base() -> String {
 }
 
 impl Terrain {
-    pub fn new(material: Handle<StandardMaterial>, atlas: MosaicKey) -> Self {
+    pub fn new(material: Handle<crate::imagery::TerrainMaterial>, atlas: MosaicKey) -> Self {
         let grid = GridSpec::default();
         let albers = Albers::new().unwrap();
         let supers = california_supers(&grid, &albers);

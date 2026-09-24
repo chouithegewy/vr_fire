@@ -110,6 +110,7 @@ fn autopilot(
                 keys.release(KeyCode::KeyF);
                 shot(&mut commands, "3_dropped");
             }
+            5 if std::env::var("VR_FIRE_AUTOPILOT_PARK").is_ok() => {}
             5 => keys.press(KeyCode::KeyW),
             6 => shot(&mut commands, "4_driving"),
             7 => keys.press(KeyCode::Space),
@@ -171,6 +172,7 @@ fn main() {
         }),
     )
     .add_plugins(FrameTimeDiagnosticsPlugin::default())
+    .add_plugins(MaterialPlugin::<imagery::TerrainMaterial>::default())
     .insert_resource(ClearColor(Color::srgb(0.55, 0.70, 0.88)))
     .insert_resource(Time::<Fixed>::from_hz(120.0))
     .insert_resource(Mode::Map)
@@ -189,6 +191,7 @@ fn main() {
             terrain::run_jobs,
             imagery::run,
             imagery::apply,
+            imagery::near,
             (map_input, truck::reset, mode_keys, source_toggle, cameras, truck::sync_model).chain(),
             net::sync,
             hud,
@@ -197,6 +200,7 @@ fn main() {
             apply_anchors,
         ),
     );
+    bevy::asset::embedded_asset!(app, "near.wgsl");
     app.add_systems(Startup, minimap::setup.after(setup));
     app.add_systems(
         PostUpdate,
@@ -211,12 +215,13 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut mats: ResMut<Assets<StandardMaterial>>,
+    mut terrain_mats: ResMut<Assets<imagery::TerrainMaterial>>,
     mut map: ResMut<MapCam>,
 ) {
     // Aerial imagery: statewide atlas over California's bounding box (plus the Nevada edges
     // of border super tiles), detail mosaics streamed per patch.
     let ca = vr_fire::region::Region::from_geojson(include_str!("../../data/regions/california.geojson")).unwrap();
-    let imagery = imagery::Imagery::new(&ca.bbox().padded(0.4), &mut mats);
+    let imagery = imagery::Imagery::new(&ca.bbox().padded(0.4), &mut terrain_mats);
     let terrain = Terrain::new(imagery.atlas_material.clone(), imagery.atlas);
     commands.insert_resource(imagery);
     // World origin: centre of California's Albers extent.
@@ -554,7 +559,7 @@ fn hud(
         terrain.packed_misses,
         cog.bytes_fetched as f64 / 1e6,
         cog.inflight(),
-        imagery.bytes as f64 / 1e6,
+        (imagery.bytes + imagery.near_bytes) as f64 / 1e6,
         imagery.pending(),
         if remotes.connected { format!("online as {} | {} other trucks", remotes.name, remotes.trucks.len()) } else { "offline".into() }
     );
