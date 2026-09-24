@@ -30,6 +30,14 @@ cargo run --release -- bake --tiles 101,340..103,342
 | `tiles/{tx}_{ty}.f32` | Raw heights, little-endian f32, row-major, north row first |
 | `tiles/{tx}_{ty}.json` | Bounds, CRS, LOD list, provenance |
 
+## Viewing in Blender
+
+```bash
+blender --python scripts/blender_import_tiles.py
+```
+
+Or open the script in Blender's Scripting tab and click Run. It imports every baked tile in `tiles/`, places each one using its JSON bounds, and widens the viewport clip distance. Edit `LOD` and `Z_EXAGGERATION` at the top of the script to change detail level and vertical scale. Press Home in the viewport to frame the terrain.
+
 ## Conventions
 
 - Tiles are 3,750 m square: 10×10 ML windows (375 m), 125×125 ML cells (30 m).
