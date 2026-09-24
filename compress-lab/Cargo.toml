@@ -1,0 +1,9 @@
+[package]
+name = "compress-lab"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vr_fire = { path = "..", default-features = false }
+zstd = "0.14"
+brotli = "9"
