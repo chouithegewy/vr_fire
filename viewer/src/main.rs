@@ -173,6 +173,7 @@ fn main() {
             apply_anchors,
         ),
     );
+    app.add_systems(PostUpdate, net::labels.after(bevy::transform::TransformSystems::Propagate));
     #[cfg(not(target_arch = "wasm32"))]
     app.add_systems(PreUpdate, autopilot.after(bevy::input::InputSystems));
     app.run();

@@ -41,6 +41,11 @@ fn serve(stream: TcpStream, id: u64, peers: Peers) {
                 last_msg = std::time::Instant::now();
                 if let Ok(mut v) = serde_json::from_str::<Value>(&t) {
                     let kind = v["t"].as_str().unwrap_or("").to_string();
+                    if kind == "ping" {
+                        // Echo to the sender only, for round-trip time.
+                        let _ = ws.send(Message::text(t.to_string()));
+                        continue;
+                    }
                     if kind != "s" && kind != "over" {
                         continue;
                     }
