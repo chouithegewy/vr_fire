@@ -4931,7 +4931,9 @@ name = "relay"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "tiny_http",
  "tungstenite 0.30.0",
+ "vr_fire",
 ]
 
 [[package]]

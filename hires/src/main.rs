@@ -131,7 +131,8 @@ fn build(t: TileId, key: &str, cache: &Path) -> Result<Outcome> {
     let body = resp.into_body().with_config().limit(1 << 30).read_to_vec()?;
     let is_tiff = body.starts_with(b"II*\0") || body.starts_with(b"MM\0*");
     if !is_tiff {
-        let msg = String::from_utf8_lossy(&body[..body.len().min(300)]).to_string();
+        let text = String::from_utf8_lossy(&body[..body.len().min(300)]).trim().to_string();
+        let msg = if text.is_empty() { "no USGS 1 m lidar for this tile".to_string() } else { text };
         if status == 200 || status == 204 || status == 400 || msg.to_lowercase().contains("no data") {
             return Ok(Outcome::NoLidar(msg));
         }

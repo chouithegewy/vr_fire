@@ -5,6 +5,8 @@ After=network.target
 [Service]
 User=thehomiedavid
 Environment=PORT=8795
+Environment=STATS_PORT=8796
+Environment=RELAY_LOG=/home/thehomiedavid/vr_fire/players.jsonl
 ExecStart=/home/thehomiedavid/vr_fire/relay
 Restart=always
 RestartSec=2
