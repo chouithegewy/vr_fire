@@ -48,7 +48,13 @@ const NEAR_RETRY_S: f32 = 10.0;
 
 /// LANDFIRE 2025 Scott & Burgan fuel models (FBFM40), 30 m, EPSG:5070 — the fire model's
 /// fuel layer. Exported for the same square as the near image to pick ground textures.
-const FBFM40: &str = "https://lfps.usgs.gov/arcgis/rest/services/Landfire_LF2025/LF2025_FBFM40_CONUS/ImageServer/exportImage";
+/// The web build goes through chilos.dev's caching proxy (`/vr_fire/fuel`): LANDFIRE's
+/// firewall rejects some browsers (headless Chrome) with a CORS-less 404.
+const FBFM40: &str = if cfg!(target_arch = "wasm32") {
+    "fuel"
+} else {
+    "https://lfps.usgs.gov/arcgis/rest/services/Landfire_LF2025/LF2025_FBFM40_CONUS/ImageServer/exportImage"
+};
 const FUEL_PX: u32 = 54; // 1.6 km / ~30 m
 
 /// Ground detail textures (Poly Haven, CC0), one array layer each, 512², embedded.
