@@ -2,6 +2,7 @@
 //! whole state down to 10 m, with a droppable green monster truck (Space = MEGA BOOST)
 //! and multiplayer through a WebSocket relay. Native and wasm (WebGPU / WebGL2).
 
+mod diag;
 mod cog;
 mod imagery;
 mod minimap;
@@ -78,12 +79,14 @@ fn autopilot(
     mut commands: Commands,
     mut step: Local<usize>,
     mut exit: MessageWriter<AppExit>,
+    diag: Res<DiagnosticsStore>,
 ) {
     use bevy::render::view::screenshot::{Screenshot, save_to_disk};
     let Ok(dir) = std::env::var("VR_FIRE_AUTOPILOT") else { return };
     let t = time.elapsed_secs();
     if (t * 2.0) as u32 != ((t - time.delta_secs()) * 2.0) as u32 && (t >= 30.0 || (t as u32) % 3 == 0) {
-        info!("autopilot t={t:.1}s step={} truck={:?} speed={:.0}km/h up_y={:.2}", *step, truck.body.pos, truck.body.vel.length() * 3.6, (truck.body.rot * Vec3::Y).y);
+        let ms = diag.get(&FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|d| d.smoothed()).unwrap_or(0.0);
+        info!("autopilot t={t:.1}s step={} truck={:?} speed={:.0}km/h up_y={:.2} frame={ms:.2}ms", *step, truck.body.pos, truck.body.vel.length() * 3.6, (truck.body.rot * Vec3::Y).y);
     }
     // VR_FIRE_AUTOPILOT_PLACE=1..6 picks the fly-to place (default 5, Placerville).
     let place = match std::env::var("VR_FIRE_AUTOPILOT_PLACE").as_deref() {
@@ -541,9 +544,17 @@ fn hud(
     origin: Res<WorldOrigin>,
     mut hud: Query<&mut Text, (With<Hud>, Without<Banner>)>,
     mut banner: Query<&mut Text, (With<Banner>, Without<Hud>)>,
+    adapter: Option<Res<bevy::render::renderer::RenderAdapterInfo>>,
+    window: Query<&Window, With<PrimaryWindow>>,
 ) {
     let fps = diag.get(&FrameTimeDiagnosticsPlugin::FPS).and_then(|d| d.smoothed()).unwrap_or(0.0);
     let mut s = format!("{fps:.0} fps   ");
+    let diag_line = {
+        let (backend, gpu) = adapter.map_or((String::from("?"), String::new()), |a| (format!("{:?}", a.backend), a.name.clone()));
+        let frames: Vec<f64> = diag.get(&FrameTimeDiagnosticsPlugin::FRAME_TIME).map_or(Vec::new(), |d| d.values().copied().collect());
+        let size = window.single().map_or((0, 0), |w| (w.physical_width(), w.physical_height()));
+        diag::line(diag::backend_name(&backend, cfg!(target_arch = "wasm32")), &gpu, size, &frames)
+    };
     let (bx, by) = (origin.0.x + map.focus.x as f64, origin.0.y - map.focus.z as f64);
     let (lon, lat) = terrain.albers.to_lonlat(bx, by).unwrap_or((0.0, 0.0));
     s += &format!(
@@ -564,6 +575,8 @@ fn hud(
         imagery.pending(),
         if remotes.connected { format!("online as {} | {} other trucks", remotes.name, remotes.trucks.len()) } else { "offline".into() }
     );
+    s += &diag_line;
+    s.push('\n');
     if *mode == Mode::Map {
         s += &format!("MAP  {lat:.4} N {:.4} W  view {:.1} km\n", -lon, map.dist / 1000.0);
         s += "scroll zoom | left-drag pan | right-drag orbit | CLICK to drop the monster truck | SHIFT+CLICK or F: 1 m lidar | 1-6 fly to places";

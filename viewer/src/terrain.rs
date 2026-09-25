@@ -241,7 +241,8 @@ impl Terrain {
         Self {
             albers,
             grid,
-            source: Source::Compressed,
+            // Native A/B runs: VR_FIRE_SOURCE=cog starts on raw COG heights.
+            source: if cfg!(not(target_arch = "wasm32")) && std::env::var("VR_FIRE_SOURCE").as_deref() == Ok("cog") { Source::Cog } else { Source::Compressed },
             supers,
             built: HashMap::new(),
             jobs: Vec::new(),

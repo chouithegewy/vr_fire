@@ -84,23 +84,30 @@ fn fragment(
     let w = near.u.w * clamp(edge / max(near.v.w, 1e-4), 0.0, 1.0);
     var base = mix(pbr_input.material.base_color.rgb, c.rgb, w);
 
-    // 2. Ground detail. Fuel cell looked up with a world-space jitter so ~30 m cells don't read as squares.
-    let jitter = (vec2<f32>(value_noise(p / 17.0), value_noise(p / 17.0 + vec2<f32>(5.2, 1.3))) - 0.5) * 24.0;
-    let fuel_size = vec2<f32>(textureDimensions(fuel_texture));
-    let fuv = clamp(uv + jitter * vec2<f32>(near.u.x, near.v.y), vec2<f32>(0.0), vec2<f32>(0.9999));
-    let fuel_class = i32(round(textureLoad(fuel_texture, vec2<i32>(fuv * fuel_size), 0).r * 255.0));
-    let layer = clamp(fuel_class, 0, 4);
+    // 2. Ground detail, only within the fade distance (most of the screen skips it). Derivatives
+    //    are taken outside the branch; textureSampleGrad is allowed in non-uniform control flow.
     let tile = p / near.detail.y;
-    // Two scales, blended, to hide tiling.
-    let d1 = textureSample(detail_texture, detail_sampler, tile, layer).rgb;
-    let d2 = textureSample(detail_texture, detail_sampler, tile * 0.27 + vec2<f32>(0.37, 0.71), layer).rgb;
-    let d = mix(d1, d2, 0.4);
-    let factor = dot(d, vec3<f32>(0.2126, 0.7152, 0.0722)) / layer_lum(layer);
+    let tile2 = tile * 0.27 + vec2<f32>(0.37, 0.71);
+    let tdx = dpdx(tile);
+    let tdy = dpdy(tile);
     let dist = distance(view.world_position.xyz, in.world_position.xyz);
     let near_cam = 1.0 - smoothstep(near.detail.w * 0.5, near.detail.w, dist);
-    let valid = select(0.0, 1.0, fuel_class < 5 && edge > 0.0);
-    let k = near.detail.x * near.detail.z * near_cam * valid;
-    base = base * mix(1.0, clamp(factor, 0.2, 2.5), k);
+    let k0 = near.detail.x * near.detail.z * near_cam * select(0.0, 1.0, edge > 0.0);
+    if k0 > 0.0 {
+        // Fuel cell looked up with a world-space jitter so ~30 m cells don't read as squares.
+        let jitter = (vec2<f32>(value_noise(p / 17.0), value_noise(p / 17.0 + vec2<f32>(5.2, 1.3))) - 0.5) * 24.0;
+        let fuel_size = vec2<f32>(textureDimensions(fuel_texture));
+        let fuv = clamp(uv + jitter * vec2<f32>(near.u.x, near.v.y), vec2<f32>(0.0), vec2<f32>(0.9999));
+        let fuel_class = i32(round(textureLoad(fuel_texture, vec2<i32>(fuv * fuel_size), 0).r * 255.0));
+        if fuel_class < 5 {
+            // Two scales, blended, to hide tiling.
+            let d1 = textureSampleGrad(detail_texture, detail_sampler, tile, fuel_class, tdx, tdy).rgb;
+            let d2 = textureSampleGrad(detail_texture, detail_sampler, tile2, fuel_class, tdx * 0.27, tdy * 0.27).rgb;
+            let d = mix(d1, d2, 0.4);
+            let factor = dot(d, vec3<f32>(0.2126, 0.7152, 0.0722)) / layer_lum(fuel_class);
+            base = base * mix(1.0, clamp(factor, 0.2, 2.5), k0);
+        }
+    }
 
     pbr_input.material.base_color = vec4<f32>(base, pbr_input.material.base_color.a);
     pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
