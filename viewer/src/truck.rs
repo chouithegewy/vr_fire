@@ -290,7 +290,7 @@ pub fn physics(
         torque -= fwd * b.ang.dot(fwd) * MASS * 1.5;
     }
     // Truck-vs-truck: sphere pushes against remote trucks (each client moves only itself).
-    for r in remotes.trucks.values() {
+    for r in remotes.trucks.values().filter(|r| !r.on_map) {
         let d = b.pos - r.pos_world;
         let dist = d.length();
         if dist < 5.2 && dist > 1e-3 {

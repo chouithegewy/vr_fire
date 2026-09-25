@@ -63,7 +63,9 @@ fn serve(stream: TcpStream, id: u64, peers: Peers, stats: Shared) {
                     if kind != "s" && kind != "over" {
                         continue;
                     }
-                    if kind == "s" {
+                    if kind == "s" && v["m"].as_bool() == Some(true) {
+                        // Presence from a player browsing the map: forward, but it's not a truck.
+                    } else if kind == "s" {
                         let speed = v["v"].as_array().map_or(0.0, |a| a.iter().filter_map(Value::as_f64).map(|c| c * c).sum::<f64>().sqrt());
                         stats.lock().unwrap().state(
                             id,

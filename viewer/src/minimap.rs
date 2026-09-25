@@ -243,7 +243,7 @@ pub fn waypoints(
                 (screen / 2.0 + dir * t, arrow)
             }
         };
-        text.0 = format!("{arrow} {}  {km}", r.name);
+        text.0 = format!("{arrow} {}{}  {km}", r.name, if r.on_map { " (on map)" } else { "" });
         // Keep the whole label on screen.
         node.left = px((at.x - 70.0).clamp(8.0, screen.x - 200.0));
         node.top = px((at.y - 10.0).clamp(8.0, screen.y - 30.0));

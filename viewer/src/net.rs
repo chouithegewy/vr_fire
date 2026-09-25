@@ -12,6 +12,8 @@ use std::collections::HashMap;
 
 /// Pose updates per second sent by each client.
 pub const SEND_HZ: f32 = 20.0;
+/// Presence updates per second while on the map without a truck.
+const MAP_SEND_HZ: f32 = 2.0;
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "t")]
@@ -19,7 +21,20 @@ enum Msg {
     #[serde(rename = "welcome")]
     Welcome { id: u64 },
     #[serde(rename = "s")]
-    State { #[serde(default)] id: u64, name: String, x: f64, y: f64, h: f32, q: [f32; 4], v: [f32; 3], b: bool },
+    State {
+        #[serde(default)]
+        id: u64,
+        name: String,
+        x: f64,
+        y: f64,
+        h: f32,
+        q: [f32; 4],
+        v: [f32; 3],
+        b: bool,
+        /// On the map without a truck: (x, y, h) is where they are looking. Presence only.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        m: bool,
+    },
     #[serde(rename = "leave")]
     Leave { id: u64 },
     #[serde(rename = "over")]
@@ -28,6 +43,10 @@ enum Msg {
     #[serde(rename = "ping")]
     Ping { c: f64 },
 }
+
+/// Where the map camera is looking (world frame), kept current by the camera system.
+#[derive(Resource, Default)]
+pub struct MapFocus(pub Vec3);
 
 /// Rolling per-second traffic counters.
 #[derive(Default, Clone)]
@@ -75,6 +94,8 @@ pub struct Remote {
     /// Distance between the drawn (smoothed) and last reported position, metres.
     pub smoothing_err: f32,
     pub total_bytes: u64,
+    /// On the map without a truck: no model, no collisions, waypoint marked "on map".
+    pub on_map: bool,
 }
 
 #[derive(Resource, Default)]
@@ -131,15 +152,24 @@ fn spawn_label(commands: &mut Commands, owner: Option<u64>) -> Entity {
 }
 
 pub fn setup(world: &mut World) {
-    let seed = bevy::platform::time::Instant::now().elapsed().as_nanos() as u64 ^ (world.entities().len() as u64).wrapping_mul(0x9e37_79b9);
-    let n = (seed.wrapping_mul(2654435761) ^ (std::ptr::addr_of!(seed) as u64)) % 10_000;
-    world.resource_mut::<Remotes>().name = format!("trucker-{n:04}");
+    // Wall clock (works in wasm via web-time); a monotonic Instant starts near zero every run.
+    let seed = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).map_or(0, |d| d.as_nanos() as u64);
+    world.resource_mut::<Remotes>().name = player_name(seed);
     let mut commands = world.commands();
     spawn_label(&mut commands, None);
     world.flush();
     if let Some(s) = connect() {
         world.insert_non_send(s);
     }
+}
+
+/// `trucker-NNNN` from a seed, well mixed so seeds a millisecond apart differ (splitmix64).
+fn player_name(seed: u64) -> String {
+    let mut z = seed.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    z ^= z >> 31;
+    format!("trucker-{:04}", z % 10_000)
 }
 
 fn send(socket: &mut Socket, remotes: &mut Remotes, msg: &Msg) {
@@ -162,6 +192,7 @@ pub fn sync(
     mut tfs: Query<&mut Transform>,
     mut vis: Query<&mut Visibility>,
     cams: Query<&GlobalTransform, With<Camera3d>>,
+    map_focus: Res<MapFocus>,
 ) {
     let Some(mut socket) = socket else { return };
     let eye = cams.single().map(|c| c.translation()).unwrap_or(Vec3::ZERO);
@@ -192,7 +223,7 @@ pub fn sync(
                         let rtt = (now_ms - c) as f32;
                         remotes.rtt_ms = Some(remotes.rtt_ms.map_or(rtt, |r| r + (rtt - r) * 0.3));
                     }
-                    Ok(Msg::State { id, name, x, y, h, q, v, b }) if id != remotes.my_id => {
+                    Ok(Msg::State { id, name, x, y, h, q, v, b, m }) if id != remotes.my_id => {
                         let albers = DVec2::new(x, y);
                         let r = remotes.trucks.entry(id).or_insert_with(|| {
                             let hue = (id as f32 * 67.0) % 360.0;
@@ -228,6 +259,7 @@ pub fn sync(
                                 jitter: 0.0,
                                 smoothing_err: 0.0,
                                 total_bytes: 0,
+                                on_map: m,
                             }
                         });
                         r.jitter += ((r.seen - 1.0 / SEND_HZ).abs() - r.jitter) * 0.1;
@@ -240,6 +272,11 @@ pub fn sync(
                         r.vel = Vec3::from_array(v);
                         r.boosting = b;
                         r.seen = 0.0;
+                        if r.on_map != m {
+                            // Snap instead of gliding between the map focus and a dropped truck.
+                            r.pos_world = world_pos(&origin, x, y, h);
+                        }
+                        r.on_map = m;
                     }
                     Ok(Msg::Leave { id }) => {
                         if let Some(r) = remotes.trucks.remove(&id) {
@@ -285,6 +322,12 @@ pub fn sync(
         let target = reported + r.vel * r.seen.min(0.25);
         r.pos_world = r.pos_world.lerp(target, (dt * 12.0).min(1.0));
         r.smoothing_err = r.pos_world.distance(reported);
+        if let Ok(mut v) = vis.get_mut(r.entity) {
+            let want = if r.on_map { Visibility::Hidden } else { Visibility::Inherited };
+            if *v != want {
+                *v = want;
+            }
+        }
         if let Ok(mut tf) = tfs.get_mut(r.entity) {
             tf.translation = r.pos_world;
             tf.rotation = tf.rotation.slerp(r.target_rot, (dt * 12.0).min(1.0));
@@ -296,7 +339,7 @@ pub fn sync(
             tf.scale = Vec3::new(12.0, 3000.0, 12.0);
         }
         if let Ok(mut v) = vis.get_mut(r.beacon) {
-            let want = if r.pos_world.distance(eye) > 1500.0 { Visibility::Inherited } else { Visibility::Hidden };
+            let want = if !r.on_map && r.pos_world.distance(eye) > 1500.0 { Visibility::Inherited } else { Visibility::Hidden };
             if *v != want {
                 *v = want;
             }
@@ -316,18 +359,22 @@ pub fn sync(
         socket.ping_timer = 0.0;
         send(&mut socket, remotes, &Msg::Ping { c: now_ms });
     }
-    if socket.open && truck.active && socket.send_timer >= 1.0 / SEND_HZ {
+    // Without a truck, a slow presence pose at the map focus keeps us visible to others.
+    let hz = if truck.active { SEND_HZ } else { MAP_SEND_HZ };
+    if socket.open && socket.send_timer >= 1.0 / hz {
         socket.send_timer = 0.0;
         let b = truck.body;
+        let (pos, m) = if truck.active { (b.pos, false) } else { (map_focus.0, true) };
         let msg = Msg::State {
             id: 0,
             name: remotes.name.clone(),
-            x: origin.0.x + b.pos.x as f64,
-            y: origin.0.y - b.pos.z as f64,
-            h: b.pos.y,
-            q: b.rot.to_array(),
-            v: b.vel.to_array(),
-            b: truck.boosting,
+            x: origin.0.x + pos.x as f64,
+            y: origin.0.y - pos.z as f64,
+            h: pos.y,
+            q: if m { [0.0, 0.0, 0.0, 1.0] } else { b.rot.to_array() },
+            v: if m { [0.0; 3] } else { b.vel.to_array() },
+            b: !m && truck.boosting,
+            m,
         };
         send(&mut socket, remotes, &msg);
     }
@@ -381,7 +428,7 @@ pub fn labels(
                 )
             }
             Some(id) => {
-                let Some(r) = remotes.trucks.get(&id) else {
+                let Some(r) = remotes.trucks.get(&id).filter(|r| !r.on_map) else {
                     *vis = Visibility::Hidden;
                     continue;
                 };
@@ -414,5 +461,28 @@ pub fn labels(
             }
             _ => *vis = Visibility::Hidden,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn poses_without_the_map_flag_are_driving_and_the_flag_is_omitted_when_false() {
+        let old = r#"{"t":"s","id":3,"name":"a","x":1.0,"y":2.0,"h":3.0,"q":[0,0,0,1],"v":[0,0,0],"b":false}"#;
+        let Ok(Msg::State { m, .. }) = serde_json::from_str::<Msg>(old) else { panic!("old pose must parse") };
+        assert!(!m);
+        let driving = Msg::State { id: 0, name: "a".into(), x: 0.0, y: 0.0, h: 0.0, q: [0.0, 0.0, 0.0, 1.0], v: [0.0; 3], b: false, m: false };
+        assert!(!serde_json::to_string(&driving).unwrap().contains("\"m\""));
+        let on_map = Msg::State { id: 0, name: "a".into(), x: 0.0, y: 0.0, h: 0.0, q: [0.0, 0.0, 0.0, 1.0], v: [0.0; 3], b: false, m: true };
+        assert!(serde_json::to_string(&on_map).unwrap().contains("\"m\":true"));
+    }
+
+    #[test]
+    fn player_names_differ_for_nearby_seeds() {
+        let names: std::collections::HashSet<_> = (1_758_000_000_000u64..1_758_000_000_050).map(player_name).collect();
+        assert!(names.len() >= 45, "only {} distinct names", names.len());
+        assert!(player_name(7).starts_with("trucker-"));
     }
 }

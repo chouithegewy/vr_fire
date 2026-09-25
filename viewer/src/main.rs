@@ -185,6 +185,7 @@ fn main() {
     .init_resource::<Truck>()
     .init_resource::<cog::Cog>()
     .init_resource::<net::Remotes>()
+    .init_resource::<net::MapFocus>()
     .add_systems(Startup, (setup, net::setup))
     .add_systems(FixedUpdate, truck::physics)
     .add_systems(
@@ -195,8 +196,7 @@ fn main() {
             imagery::run,
             imagery::apply,
             imagery::near,
-            (map_input, truck::reset, mode_keys, source_toggle, cameras, truck::sync_model).chain(),
-            net::sync,
+            (map_input, truck::reset, mode_keys, source_toggle, cameras, truck::sync_model, publish_map_focus, net::sync).chain(),
             hud,
             cursor_lock,
             water_follow,
@@ -455,6 +455,11 @@ fn source_toggle(keys: Res<ButtonInput<KeyCode>>, mut terrain: ResMut<Terrain>, 
 }
 
 /// Lock and hide the pointer while driving (mouse steers the camera); free it on the map.
+/// Shares the map camera's focus with multiplayer (presence while browsing the map).
+fn publish_map_focus(map: Res<MapCam>, mut focus: ResMut<net::MapFocus>) {
+    focus.0 = map.focus;
+}
+
 fn cursor_lock(mode: Res<Mode>, mut cursor: Query<&mut bevy::window::CursorOptions, With<PrimaryWindow>>) {
     if !mode.is_changed() {
         return;
@@ -573,7 +578,12 @@ fn hud(
         cog.inflight(),
         (imagery.bytes + imagery.near_bytes) as f64 / 1e6,
         imagery.pending(),
-        if remotes.connected { format!("online as {} | {} other trucks", remotes.name, remotes.trucks.len()) } else { "offline".into() }
+        if remotes.connected {
+            let driving = remotes.trucks.values().filter(|r| !r.on_map).count();
+            format!("online as {} | {} other players ({driving} driving)", remotes.name, remotes.trucks.len())
+        } else {
+            "offline".into()
+        }
     );
     s += &diag_line;
     s.push('\n');
