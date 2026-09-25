@@ -59,14 +59,51 @@ On a Wayland desktop, use `SDL_VIDEODRIVER=wayland`. Under XWayland (the default
 Unity and Bevy are held to the monitor refresh rate even with vsync off. See
 [../bench/README.md](../bench/README.md) for the comparison with Bevy.
 
+## Meta Quest build (OpenXR)
+
+```sh
+U=~/Unity/Hub/Editor/6000.3.25f1/Editor/Unity
+$U -batchmode -nographics -quit -projectPath unity -buildTarget Android \
+   -executeMethod VrFire.EditorTools.VrFireQuest.Setup -logFile unity/Logs/quest-setup.log
+$U -batchmode -nographics -quit -projectPath unity -buildTarget Android \
+   -executeMethod VrFire.EditorTools.VrFireQuest.Build -logFile unity/Logs/quest-build.log
+```
+
+It takes two invocations. `Setup` switches the project to the Input System, which only reaches
+the Editor's compiled scripts after a restart. Building in the same session fails with "script
+class layout is incompatible between the editor and the player".
+
+| Step | Does |
+|---|---|
+| `ImportTiles` | `bench/tiles/lod1/*.fbx` (30 m, ~31k triangles per tile, 285k for the block) into `Assets/VrFire/TilesLod1` |
+| `ConfigureAndroid` | `dev.chilos.vrfire`; IL2CPP, ARM64, Vulkan, linear colour, min API 32, ASTC; Input System + old input |
+| `EnableOpenXR` | OpenXR loader for Android, Meta Quest support, Oculus Touch interaction profile, single-pass instanced (multiview) |
+| `BuildScene` | `Quest.unity`: the 9 tiles with mesh colliders, sun, XR rig at the block centre (head tracked by `TrackedPoseDriver`) |
+| `BuildApk` | `Build/Quest/vr_fire_quest.apk` (47 MB) |
+
+The APK targets Quest, Quest 2, Pro, 3 and 3S (`com.oculus.supportedDevices`), launches as a VR
+app, and needs Unity's OpenJDK 17 module
+(`unityhub --headless install-modules --version 6000.3.25f1 -m android-open-jdk-17.0.18+8`).
+
+**Controls** (`QuestRig`): left stick moves where you're looking; right stick left/right snap
+turns 30°; right stick up/down climbs or descends. You can't go below the terrain.
+
+**Install:** turn on developer mode for the headset in the Meta Horizon phone app, connect it
+by USB and allow debugging in the headset, then
+
+```sh
+~/Unity/Hub/Editor/6000.3.25f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb \
+  install -r unity/Build/Quest/vr_fire_quest.apk
+```
+
+It appears under Library > Unknown Sources.
+
 ## Towards VR
 
-- OpenXR 1.16.1 and XR Plug-in Management 4.6.1 are installed, but no loader is enabled, so
-  builds are flat-screen. To run on a headset, enable OpenXR under Project Settings > XR Plug-in
-  Management (Standalone for PC VR / Quest Link, Android for a standalone Quest). Then add the
-  interaction profile for your controllers.
-- The Android module is installed, so a standalone Quest build is one `BuildTarget.Android`
-  away. Budget there is much tighter than on a desktop GPU: the 2.5 M-triangle 10 m scene
-  here is a desktop load; a Quest wants LOD tiles (30 m and coarser) and single-pass
-  instanced stereo.
+- OpenXR is enabled for Android (the Quest build above). Standalone (Linux) has no loader, so
+  the desktop benchmark stays flat-screen; enable OpenXR for Standalone to use PC VR / Quest
+  Link.
+- A standalone Quest's GPU budget is much tighter than a desktop's: the 2.5 M-triangle 10 m
+  scene is a desktop load, so the Quest build uses the 30 m tiles (285k triangles). It hasn't
+  been profiled on a headset yet.
 - Keep URP: it's Unity's supported pipeline for Quest and single-pass instanced rendering.

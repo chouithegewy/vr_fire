@@ -53,16 +53,16 @@ namespace VrFire.EditorTools
         const int Nodes = 376;
         const float TileM = 3750f;
 
-        static string RepoRoot => Path.GetFullPath(Path.Combine(Application.dataPath, "..", ".."));
+        internal static string RepoRoot => Path.GetFullPath(Path.Combine(Application.dataPath, "..", ".."));
 
-        static string Arg(string name, string fallback)
+        internal static string Arg(string name, string fallback)
         {
             var args = Environment.GetCommandLineArgs();
             int i = Array.IndexOf(args, name);
             return i >= 0 && i + 1 < args.Length ? args[i + 1] : fallback;
         }
 
-        static void Fail(string msg)
+        internal static void Fail(string msg)
         {
             Debug.LogError("VRFIRE FAIL: " + msg);
             if (Application.isBatchMode) EditorApplication.Exit(1);
@@ -119,7 +119,7 @@ namespace VrFire.EditorTools
             }
         }
 
-        static UniversalRenderPipelineAsset MakePipeline()
+        internal static UniversalRenderPipelineAsset MakePipeline()
         {
             Directory.CreateDirectory(SettingsDir);
             var rendererPath = SettingsDir + "/BenchRenderer.asset";
