@@ -1,7 +1,7 @@
 # Driver leaderboard — design specification
 
 - **Date:** 2026-09-25
-- **Status:** Draft for review; nothing implemented
+- **Status:** Draft for review; nothing implemented. Waiting on the §2 decisions
 - **Depends on:** [relay backpressure (F01)](2026-09-25-relay-backpressure-design.md). Build this
   after the F01 relay rewrite; every relay-originated message uses its bounded fan-out.
 - **Scope:** Timed runs on fixed courses and a top-speed board, measured by the relay, shown in

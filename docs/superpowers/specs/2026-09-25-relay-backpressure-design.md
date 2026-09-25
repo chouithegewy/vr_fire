@@ -1,7 +1,7 @@
 # Relay backpressure — fix specification
 
 - **Date:** 2026-09-25
-- **Status:** Specified; implementation and runtime validation pending
+- **Status:** Implemented and deployed 2026-09-25 (see §12). Remaining acceptance: the nginx soak and a soak at exactly 32 sockets
 - **Finding:** [F01: unbounded relay queues](../../review/index.html#F01)
 - **Source baseline:** `c15e0beb052d4373430d1486e4065f69e49edc63`
 - **Scope:** Multiplayer relay outbound buffering, related connection limits, and slow-client isolation
@@ -342,10 +342,14 @@ once every 30 s). That is 31 admitted sockets at peak, one short of the cap.
 RSS rose 0.13 MB over the ten sustained minutes and was flat for the final minute. This is
 reported as a plateau with small allocator drift, not as zero growth.
 
-**Not yet done:**
-- The run through local nginx with the checked-in proxy settings (nginx isn't installed on
-  the development machine).
-- A soak at exactly 32 admitted sockets. The cap itself is covered by the integration test.
-- Deployment. This spec doesn't authorize it.
+**Deployed** 2026-09-25 at the user's request (`scripts/deploy_viewer.sh`; the service
+restarted at 10:41 UTC). Checked in production: the service is active, `/stats.json` reports
+the `relay` object, and two probe clients exchanged about 89 poses each through nginx over
+`wss://`. That is a functional check through the production proxy, not the nginx soak below.
 
-F01 stays open until these are resolved and the review links this record.
+**Not yet done:**
+- The soak through nginx with the checked-in proxy settings (nginx isn't installed on the
+  development machine).
+- A soak at exactly 32 admitted sockets. The cap itself is covered by the integration test.
+
+F01 is fixed and deployed; it's fully closed when these two runs pass.

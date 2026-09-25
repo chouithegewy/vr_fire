@@ -1,7 +1,10 @@
 # Dinosaur mode and truck lasso — design specification
 
 - **Date:** 2026-09-25
-- **Status:** Draft for review; nothing implemented
+- **Status:** Implemented and deployed 2026-09-25 (`3b525e6`, density raised in `2ce9d92`).
+  Differences from this draft: about half the cells hold a herd (not one in six), the HUD also
+  points to the nearest dinosaur, and herbivores don't yet prefer grass/shrub fuel classes
+  (§4 "favour ... fuel classes" is not implemented)
 - **Scope:** Viewer only. Toggleable roaming dinosaurs around the player's truck, and a lasso
   item on the truck that hog-ties them. No relay changes.
 

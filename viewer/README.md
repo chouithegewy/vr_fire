@@ -71,6 +71,12 @@ respawn.
 
 ## How it works
 
+**HUD diagnostics** (`src/diag.rs`). The third HUD line shows the graphics backend (Vulkan,
+WebGPU or WebGL2), the GPU name (browsers hide it under WebGPU; WebGL2 shows it through
+ANGLE), the render size, and frame-time p50/p99/max over the last 120 frames. On WebGL2 it
+adds a hint to check `chrome://gpu`, since WebGL2 usually means the browser found no WebGPU
+adapter.
+
 **Terrain comes straight from USGS.** The USGS 3DEP 1/3 arc-second DEM is published as
 cloud-optimized GeoTIFFs on S3, and the bucket allows cross-origin requests. The viewer
 reads each file's header, then fetches only the 512×512 pieces it needs with HTTP range

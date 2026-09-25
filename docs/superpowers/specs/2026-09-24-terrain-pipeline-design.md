@@ -1,7 +1,7 @@
 # Terrain Pipeline — Design Spec
 
 - **Date:** 2026-09-24
-- **Status:** Draft, awaiting review
+- **Status:** Implemented 2026-09-24 ([plan](../plans/2026-09-24-terrain-pipeline.md)). Later additions not in this spec: packed `.vrh` tiles (`vr_fire pack`) and FBX output (`bake --format fbx|both`)
 - **Scope:** Sub-project 1 of the VR wildfire simulator prototype (terrain ingest + mesh bake)
 
 ## 1. Context

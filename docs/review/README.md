@@ -10,6 +10,14 @@ Repository-wide static review, with deeper tracing of ingest/store/pack, viewer 
 
 The review started at dddce95 with existing viewer edits. Those edits were committed concurrently as c15e0be during the review. The final source references and excerpts are pinned to c15e0be; the reviewer did not make that commit.
 
+## Follow-ups (after this snapshot)
+
+- **2026-09-25, F01:** fixed and deployed (bounded outboxes, write deadlines, admission cap,
+  rate limit). Tests, a 12-minute 64 MiB soak and the production check are recorded in the
+  [relay backpressure spec, §12](../superpowers/specs/2026-09-25-relay-backpressure-design.md#12-implementation-record-2026-09-25-local-validation-only).
+  Still to run: the nginx soak and a 32-socket soak. The findings below are the original
+  snapshot and are unchanged.
+
 ## Findings
 
 | ID | Priority | Component | Evidence | Finding |
