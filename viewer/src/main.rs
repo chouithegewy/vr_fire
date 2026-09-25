@@ -636,7 +636,7 @@ fn hud(
         );
         if dinos.enabled {
             s += "\n";
-            s += &dinos.hud();
+            s += &dinos.hud(bevy::math::DVec2::new(origin.0.x + truck.body.pos.x as f64, origin.0.y - truck.body.pos.z as f64));
         }
         if let Some(name) = truck.flattened_by {
             s += &format!("\nFlattened by a {name}! Press R to get back on your wheels.");

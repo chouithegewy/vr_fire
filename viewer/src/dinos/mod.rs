@@ -95,8 +95,18 @@ impl Dinos {
         self.agents.len()
     }
 
+    /// Nearest dinosaur that isn't hog-tied or down, from `here` (EPSG:5070).
+    pub fn nearest(&self, here: DVec2) -> Option<(&'static str, f64, &'static str)> {
+        self.agents
+            .iter()
+            .filter(|a| !matches!(a.state, State::Tied | State::Down))
+            .map(|a| (a, a.pos.distance(here)))
+            .min_by(|x, y| x.1.total_cmp(&y.1))
+            .map(|(a, d)| (a.species.def().name, d, compass(a.pos - here)))
+    }
+
     /// One-line HUD status, e.g. `DINOS 23 nearby | hog-tied 3 | lasso READY -> Stegosaurus loop 210/360`.
-    pub fn hud(&self) -> String {
+    pub fn hud(&self, here: DVec2) -> String {
         let target = self.lasso.target.and_then(|id| self.agents.iter().find(|a| a.id == id));
         let deg = (self.lasso.progress() * 360.0).round();
         let lasso = match (self.lasso.stage, target) {
@@ -108,11 +118,23 @@ impl Dinos {
             (Stage::Cinch(_), _) => "tightening...".to_string(),
         };
         let mut s = format!("DINOS {} nearby | hog-tied {} | lasso {lasso}", self.nearby(), self.lasso.tied);
+        match self.nearest(here) {
+            Some((name, d, dir)) => s += &format!(" | nearest: {name} {} {dir}", if d >= 1000.0 { format!("{:.1} km", d / 1000.0) } else { format!("{d:.0} m") }),
+            None if self.agents.is_empty() => s += " | none within 1.5 km yet (drive on)",
+            None => {}
+        }
         if let Some((m, _)) = &self.message {
             s += &format!("\n{m}");
         }
         s
     }
+}
+
+/// Compass bearing (N, NE, ...) of an EPSG:5070 offset (x east, y north).
+pub fn compass(d: DVec2) -> &'static str {
+    const NAMES: [&str; 8] = ["E", "NE", "N", "NW", "W", "SW", "S", "SE"];
+    let octant = (d.y.atan2(d.x) / (std::f64::consts::PI / 4.0)).round().rem_euclid(8.0) as usize;
+    NAMES[octant % 8]
 }
 
 #[derive(Component)]
@@ -698,6 +720,19 @@ fn lasso_visuals(
                 *vis = Visibility::Inherited;
             }
             None => *vis = Visibility::Hidden,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compass_names_the_eight_directions() {
+        let cases = [((0.0, 1.0), "N"), ((1.0, 1.0), "NE"), ((1.0, 0.0), "E"), ((1.0, -1.0), "SE"), ((0.0, -1.0), "S"), ((-1.0, -1.0), "SW"), ((-1.0, 0.0), "W"), ((-1.0, 1.0), "NW"), ((0.2, 1.0), "N")];
+        for ((x, y), want) in cases {
+            assert_eq!(compass(DVec2::new(x, y)), want, "{x},{y}");
         }
     }
 }

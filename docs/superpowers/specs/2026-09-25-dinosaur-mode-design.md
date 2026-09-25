@@ -42,7 +42,7 @@ Colours are muted earth tones per species with a slight per-animal hue variation
 
 - The world is divided into 1 km cells on the EPSG:5070 grid. A cell's contents come from a hash
   of its cell coordinates, so every player gets the same herds in the same cells.
-- About one cell in six holds a herd. The species is drawn with weights (herbivores common,
+- About half the cells hold a herd (raised from one in six after play-testing: too sparse to find). The species is drawn with weights (herbivores common,
   T. rex rare) and constrained by ground: herbivores favour grass and shrub fuel classes from
   the existing LANDFIRE fuel map where available; nothing spawns on water, rock-only cells,
   or slopes steeper than 30°.

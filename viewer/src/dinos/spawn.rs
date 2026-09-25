@@ -47,10 +47,10 @@ pub struct Herd {
     pub members: Vec<DVec2>,
 }
 
-/// The herd living in a cell, if any (about one cell in six).
+/// The herd living in a cell, if any (about half the cells).
 pub fn herd(cx: i64, cy: i64) -> Option<Herd> {
     let mut r = cell_rng(cx, cy);
-    if r.f64() >= 1.0 / 6.0 {
+    if r.f64() >= 0.5 {
         return None;
     }
     // Herbivores common, T. rex rare.
@@ -104,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn about_one_cell_in_six_has_a_herd_with_every_species_present() {
+    fn about_half_the_cells_have_a_herd_with_every_species_present() {
         let mut n = 0;
         let mut seen = std::collections::HashSet::new();
         for cx in -2100..-2000 {
@@ -128,7 +128,7 @@ mod tests {
             }
         }
         let frac = n as f64 / 10_000.0;
-        assert!((0.14..0.19).contains(&frac), "{frac}");
+        assert!((0.45..0.55).contains(&frac), "{frac}");
         assert_eq!(seen.len(), 5);
     }
 
