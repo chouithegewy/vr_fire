@@ -6,6 +6,8 @@
 //!   /vr_fire/ws          → 127.0.0.1:$PORT        (default 8795, WebSocket)
 //!   /vr_fire/stats[.json] → 127.0.0.1:$STATS_PORT (default 8796, HTML / JSON)
 
+mod limits;
+mod outbox;
 mod stats;
 
 use serde_json::{Value, json};
