@@ -43,6 +43,19 @@ Terrain streams from USGS on demand, so the first view of an area takes a few se
 | Mouse (pointer locked) | Look around; the camera swings back behind the truck when you drive and leave the mouse still |
 | Scroll | Chase-camera distance |
 | F | Fetch 1 m lidar for the tile under the truck |
+| J | Dinosaur mode on/off |
+| Q | Ready/stow the lasso (dinosaur mode) |
+
+**Dinosaur mode** (`src/dinos/`). J spawns herds of low-poly dinosaurs around the truck
+(T. rex, velociraptors, stegosaurus, triceratops, brachiosaurus) that wander, graze, flee,
+face down threats, hunt and eat. Herds come from a per-1 km-cell seed, so every player starts
+with the same herds, but the animals are simulated locally (not synchronised). The truck
+carries a lasso on a pole behind the cab. Press Q to ready it, then drive a full circle around a
+dinosaur (above 8 km/h, within the ring) to net it and a second circle to hog-tie it. Driving
+too far away snaps the rope, and a netted T. rex breaks free after 20 s. Heavy dinosaurs push
+the truck, and a charging one can flip it. `VR_FIRE_AUTOPILOT_DINOS=1` (native, with
+`VR_FIRE_AUTOPILOT`) runs a scripted demo that screenshots a herd, a netted and a hog-tied
+stegosaurus.
 
 While driving:
 - A **minimap** in the corner shows California, the 20 km detailed-terrain window around

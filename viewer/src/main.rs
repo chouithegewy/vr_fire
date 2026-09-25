@@ -3,6 +3,7 @@
 //! and multiplayer through a WebSocket relay. Native and wasm (WebGPU / WebGL2).
 
 mod diag;
+mod dinos;
 mod cog;
 mod imagery;
 mod minimap;
@@ -80,6 +81,7 @@ fn autopilot(
     mut step: Local<usize>,
     mut exit: MessageWriter<AppExit>,
     diag: Res<DiagnosticsStore>,
+    dinosaurs: Res<dinos::Dinos>,
 ) {
     use bevy::render::view::screenshot::{Screenshot, save_to_disk};
     let Ok(dir) = std::env::var("VR_FIRE_AUTOPILOT") else { return };
@@ -101,8 +103,26 @@ fn autopilot(
         commands.spawn(Screenshot::primary_window()).observe(save_to_disk(format!("{dir}/{name}.png")));
     };
     // (time, action)
-    let plan: [(f32, u8); 13] = [(8.0, 0), (9.0, 1), (20.0, 2), (21.0, 3), (22.0, 12), (30.0, 4), (30.5, 5), (34.5, 6), (35.0, 7), (37.0, 8), (38.0, 9), (41.0, 10), (43.0, 11)];
+    let drive: &[(f32, u8)] = &[(8.0, 0), (9.0, 1), (20.0, 2), (21.0, 3), (22.0, 12), (30.0, 4), (30.5, 5), (34.5, 6), (35.0, 7), (37.0, 8), (38.0, 9), (41.0, 10), (43.0, 11)];
+    // VR_FIRE_AUTOPILOT_DINOS: dinosaur mode, then hard-left circles around a tame stegosaurus
+    // with the lasso ready (the dinosaur module screenshots the netted and hog-tied moments).
+    let dinos: &[(f32, u8)] = &[(8.0, 0), (9.0, 1), (20.0, 2), (21.0, 3), (30.0, 4), (30.5, 20), (31.0, 21), (35.0, 22), (35.5, 23), (150.0, 11)];
+    let demo = std::env::var("VR_FIRE_AUTOPILOT_DINOS").is_ok();
+    let plan = if demo { dinos } else { drive };
+    if demo && *step >= 9 {
+        // Circle slowly: hold left, pulse the throttle to stay near 16 km/h (below the scare speed).
+        keys.press(KeyCode::KeyA);
+        if truck.body.vel.length() < 4.5 {
+            keys.press(KeyCode::KeyW);
+        } else {
+            keys.release(KeyCode::KeyW);
+        }
+    }
     while *step < plan.len() && t >= plan[*step].0 {
+        // The dinosaur demo waits for its animals (terrain may still be streaming).
+        if demo && matches!(plan[*step].1, 22 | 23) && dinosaurs.nearby() == 0 {
+            break;
+        }
         match plan[*step].1 {
             0 => shot(&mut commands, "1_california"),
             1 => keys.press(place),
@@ -124,6 +144,13 @@ fn autopilot(
                 chase.dist = 40.0;
             }
             10 => shot(&mut commands, "6_turning"),
+            20 => keys.press(KeyCode::KeyJ),
+            21 => {
+                keys.release(KeyCode::KeyJ);
+                chase.dist = 45.0;
+            }
+            22 => shot(&mut commands, "7_dinosaurs"),
+            23 => keys.press(KeyCode::KeyQ),
             _ => {
                 info!("autopilot done: truck at {:?} speed {:.1}", truck.body.pos, truck.body.vel.length());
                 exit.write(AppExit::Success);
@@ -205,6 +232,7 @@ fn main() {
     );
     bevy::asset::embedded_asset!(app, "near.wgsl");
     app.add_systems(Startup, minimap::setup.after(setup));
+    app.add_plugins(dinos::DinoPlugin);
     app.add_systems(
         PostUpdate,
         (net::labels, minimap::update, minimap::waypoints).after(bevy::transform::TransformSystems::Propagate),
@@ -551,6 +579,7 @@ fn hud(
     mut banner: Query<&mut Text, (With<Banner>, Without<Hud>)>,
     adapter: Option<Res<bevy::render::renderer::RenderAdapterInfo>>,
     window: Query<&Window, With<PrimaryWindow>>,
+    dinos: Res<dinos::Dinos>,
 ) {
     let fps = diag.get(&FrameTimeDiagnosticsPlugin::FPS).and_then(|d| d.smoothed()).unwrap_or(0.0);
     let mut s = format!("{fps:.0} fps   ");
@@ -600,11 +629,18 @@ fn hud(
         let kmh = truck.body.vel.length() * 3.6;
         let fuel = (truck.boost_fuel * 20.0) as usize;
         s += &format!(
-            "DRIVE  {kmh:.0} km/h   MEGA BOOST [{}{}]{}\nWASD drive | SPACE mega boost | R reset | F 1 m lidar here | M map | mouse look, scroll zoom",
+            "DRIVE  {kmh:.0} km/h   MEGA BOOST [{}{}]{}\nWASD drive | SPACE mega boost | R reset | F 1 m lidar here | M map | J dinosaurs | Q lasso | mouse look, scroll zoom",
             "#".repeat(fuel),
             "-".repeat(20 - fuel),
             if truck.waiting_for_ground { "   loading 10 m terrain…" } else { "" }
         );
+        if dinos.enabled {
+            s += "\n";
+            s += &dinos.hud();
+        }
+        if let Some(name) = truck.flattened_by {
+            s += &format!("\nFlattened by a {name}! Press R to get back on your wheels.");
+        }
     }
     if !terrain.hires.is_empty() {
         let mut items: Vec<_> = terrain.hires.iter().collect();

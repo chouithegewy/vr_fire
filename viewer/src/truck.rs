@@ -43,6 +43,10 @@ pub struct Truck {
     pub last_contact: Option<(u64, f32)>,
     pub upside_down_for: f32,
     pub game_over_sent: bool,
+    /// Heavy dinosaur this truck touched recently: (species name, seconds ago).
+    pub dino_contact: Option<(&'static str, f32)>,
+    /// Flipped by a dinosaur (not a multiplayer GAME OVER); cleared by R.
+    pub flattened_by: Option<&'static str>,
 }
 
 #[derive(Component)]
@@ -63,6 +67,8 @@ impl Truck {
         self.upside_down_for = 0.0;
         self.game_over_sent = false;
         self.last_contact = None;
+        self.dino_contact = None;
+        self.flattened_by = None;
     }
     pub fn forward(&self) -> Vec3 {
         self.body.rot * Vec3::NEG_Z
@@ -142,6 +148,32 @@ pub fn spawn_model(commands: &mut Commands, meshes: &mut Assets<Mesh>, mats: &mu
         commands.entity(wheel).add_children(&[t, h, c]);
         kids.push(wheel);
     }
+    // Lasso item: a pole behind the cab with a coil of yellow rope (every truck carries it; the
+    // coil glows and a loop spins above it while the lasso is ready).
+    let rope = mats.add(StandardMaterial { base_color: Color::srgb(0.95, 0.8, 0.25), perceptual_roughness: 0.9, ..default() });
+    let tip = crate::dinos::POLE_TIP;
+    kids.push(commands.spawn(part(meshes.add(Cylinder::new(0.08, 1.4)), &chrome, Transform::from_xyz(tip.x, tip.y - 0.7, tip.z))).id());
+    let coil = commands
+        .spawn(part(
+            meshes.add(Torus::new(0.3, 0.5)),
+            &rope,
+            Transform::from_xyz(tip.x, tip.y - 0.35, tip.z).with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+        ))
+        .id();
+    kids.push(coil);
+    let spin = commands
+        .spawn((
+            Mesh3d(meshes.add(Torus::new(1.6, 1.75))),
+            MeshMaterial3d(rope.clone()),
+            Transform::from_xyz(tip.x, tip.y + 0.6, tip.z),
+            Visibility::Hidden,
+        ))
+        .id();
+    kids.push(spin);
+    if local {
+        commands.entity(coil).insert(crate::dinos::LassoCoil);
+        commands.entity(spin).insert(crate::dinos::LassoSpin);
+    }
     commands.entity(root).add_children(&kids);
     root
 }
@@ -170,6 +202,7 @@ pub fn physics(
     origin: Res<WorldOrigin>,
     mut truck: ResMut<Truck>,
     remotes: Res<crate::net::Remotes>,
+    dinos: Res<crate::dinos::Obstacles>,
 ) {
     let dt = time.delta_secs();
     let t = &mut *truck;
@@ -305,6 +338,24 @@ pub fn physics(
             t.last_contact = Some((r.id, 0.0));
         }
     }
+    // Dinosaurs: heavy ones push like trucks; a fast-moving one can flip the truck.
+    for o in dinos.0.iter().filter(|o| o.heavy) {
+        let d = b.pos - o.pos;
+        let dist = d.length();
+        let reach = o.radius + 2.6;
+        if dist < reach && dist > 1e-3 {
+            let n = d / dist;
+            let rel = b.vel - o.vel;
+            // Capped so a deep overlap can never launch the truck.
+            let f = n * ((reach - dist) * 300_000.0 - rel.dot(n).min(0.0) * 20_000.0).min(MASS * 40.0);
+            force += f;
+            if o.vel.length() > 3.0 {
+                let lever = Vec3::new(-n.x, 0.0, -n.z) * 1.2 + Vec3::Y * -0.5;
+                torque += lever.cross(f) * 0.6;
+            }
+            t.dino_contact = Some((o.name, 0.0));
+        }
+    }
     let inv_i = inertia_inv_world(b.rot);
     b.vel += force / MASS * dt;
     b.vel *= 1.0 - 0.02 * dt;
@@ -321,8 +372,17 @@ pub fn physics(
             t.last_contact = None;
         }
     }
+    if let Some((_, age)) = &mut t.dino_contact {
+        *age += dt;
+        if *age > 4.0 {
+            t.dino_contact = None;
+        }
+    }
     let upside = (t.body.rot * Vec3::Y).y < -0.2;
     t.upside_down_for = if upside { t.upside_down_for + dt } else { 0.0 };
+    if t.upside_down_for > 1.5 && t.flattened_by.is_none() && t.last_contact.is_none() {
+        t.flattened_by = t.dino_contact.map(|(name, _)| name);
+    }
     if t.game_over.is_none() && t.upside_down_for > 1.5 {
         if let Some((id, _)) = t.last_contact {
             let by = remotes.trucks.get(&id).map(|r| r.name.clone()).unwrap_or_else(|| format!("player {id}"));
