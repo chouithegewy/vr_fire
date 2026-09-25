@@ -216,12 +216,13 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut mats: ResMut<Assets<StandardMaterial>>,
     mut terrain_mats: ResMut<Assets<imagery::TerrainMaterial>>,
+    mut images: ResMut<Assets<Image>>,
     mut map: ResMut<MapCam>,
 ) {
     // Aerial imagery: statewide atlas over California's bounding box (plus the Nevada edges
     // of border super tiles), detail mosaics streamed per patch.
     let ca = vr_fire::region::Region::from_geojson(include_str!("../../data/regions/california.geojson")).unwrap();
-    let imagery = imagery::Imagery::new(&ca.bbox().padded(0.4), &mut terrain_mats);
+    let imagery = imagery::Imagery::new(&ca.bbox().padded(0.4), &mut terrain_mats, &mut images);
     let terrain = Terrain::new(imagery.atlas_material.clone(), imagery.atlas);
     commands.insert_resource(imagery);
     // World origin: centre of California's Albers extent.

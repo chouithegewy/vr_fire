@@ -46,6 +46,85 @@ const NEAR_RECENTER_M: f64 = 400.0;
 const NEAR_FADE_M: f64 = 120.0;
 const NEAR_RETRY_S: f32 = 10.0;
 
+/// LANDFIRE 2025 Scott & Burgan fuel models (FBFM40), 30 m, EPSG:5070 — the fire model's
+/// fuel layer. Exported for the same square as the near image to pick ground textures.
+const FBFM40: &str = "https://lfps.usgs.gov/arcgis/rest/services/Landfire_LF2025/LF2025_FBFM40_CONUS/ImageServer/exportImage";
+const FUEL_PX: u32 = 54; // 1.6 km / ~30 m
+
+/// Ground detail textures (Poly Haven, CC0), one array layer each, 512², embedded.
+pub const DETAIL_LAYERS: [(&str, &[u8]); 5] = [
+    ("withered_grass", include_bytes!("../assets/detail/withered_grass.jpg")),
+    ("dry_ground_rocks", include_bytes!("../assets/detail/dry_ground_rocks.jpg")),
+    ("forrest_ground_03", include_bytes!("../assets/detail/forrest_ground_03.jpg")),
+    ("dry_riverbed_rock", include_bytes!("../assets/detail/dry_riverbed_rock.jpg")),
+    ("asphalt_02", include_bytes!("../assets/detail/asphalt_02.jpg")),
+];
+/// Metres per repeat of a detail texture, how strongly it modulates the aerial photo, and
+/// the camera distance by which it has faded out.
+const DETAIL_TILE_M: f32 = 2.5;
+const DETAIL_STRENGTH: f32 = 0.9;
+const DETAIL_FADE_M: f32 = 90.0;
+pub const NO_DETAIL: u8 = 255;
+
+/// FBFM40 fuel model → detail layer: 0 grass, 1 shrub soil, 2 timber litter, 3 rock, 4 urban.
+pub fn fuel_layer(code: u8) -> u8 {
+    match code {
+        93 | 101..=109 | 121..=124 => 0, // agriculture, grass, grass-shrub
+        141..=149 => 1,                  // shrub
+        161..=165 | 181..=189 | 201..=204 => 2, // timber understory, timber litter, slash
+        92 | 99 => 3,                    // snow/ice, barren
+        91 => 4,                         // urban
+        _ => NO_DETAIL,                  // water (98), no data
+    }
+}
+
+/// The detail textures as one 2D array image with mips, plus each layer's mean luminance
+/// (the shader divides by it so detail adds texture without shifting the photo's brightness).
+pub fn detail_array_image() -> (Image, [f32; 5]) {
+    const SIDE: u32 = 512;
+    let mut data = Vec::new();
+    let mut lum = [0.5f32; 5];
+    let mut levels = 1;
+    for (k, (name, jpeg)) in DETAIL_LAYERS.iter().enumerate() {
+        use zune_jpeg::zune_core::{bytestream::ZCursor, colorspace::ColorSpace, options::DecoderOptions};
+        let options = DecoderOptions::default().jpeg_set_out_colorspace(ColorSpace::RGBA);
+        let px = zune_jpeg::JpegDecoder::new_with_options(ZCursor::new(*jpeg), options)
+            .decode()
+            .unwrap_or_else(|e| panic!("embedded detail texture {name}: {e:?}"));
+        assert_eq!(px.len(), (SIDE * SIDE * 4) as usize, "{name} must be 512x512");
+        // Mean luminance in linear space (the shader works in linear).
+        let lin = |c: u8| (c as f32 / 255.0).powf(2.2);
+        let sum: f32 = px.chunks_exact(4).map(|p| 0.2126 * lin(p[0]) + 0.7152 * lin(p[1]) + 0.0722 * lin(p[2])).sum();
+        lum[k] = sum / (SIDE * SIDE) as f32;
+        let (with, n) = with_mips(px, SIDE, SIDE);
+        levels = n;
+        data.extend_from_slice(&with); // layer-major: all mips of layer 0, then layer 1, ...
+    }
+    let mut image = Image::new(
+        Extent3d { width: SIDE, height: SIDE, depth_or_array_layers: DETAIL_LAYERS.len() as u32 },
+        TextureDimension::D2,
+        vec![0; (SIDE * SIDE * 4) as usize * DETAIL_LAYERS.len()],
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD,
+    );
+    image.data = Some(data);
+    image.texture_descriptor.mip_level_count = levels;
+    image.texture_view_descriptor = Some(bevy::render::render_resource::TextureViewDescriptor {
+        dimension: Some(bevy::render::render_resource::TextureViewDimension::D2Array),
+        ..default()
+    });
+    image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+        address_mode_u: bevy::image::ImageAddressMode::Repeat,
+        address_mode_v: bevy::image::ImageAddressMode::Repeat,
+        mag_filter: ImageFilterMode::Linear,
+        min_filter: ImageFilterMode::Linear,
+        mipmap_filter: ImageFilterMode::Linear,
+        anisotropy_clamp: 8,
+        ..default()
+    });
+    (image, lum)
+}
+
 /// Terrain material: StandardMaterial plus the sharp near-truck image (`near.wgsl`).
 pub type TerrainMaterial = ExtendedMaterial<StandardMaterial, NearImagery>;
 
@@ -55,6 +134,11 @@ pub type TerrainMaterial = ExtendedMaterial<StandardMaterial, NearImagery>;
 pub struct NearParams {
     pub u: Vec4,
     pub v: Vec4,
+    /// x = detail enabled (fuel map ready), y = metres per repeat, z = strength, w = fade distance.
+    pub detail: Vec4,
+    /// Mean linear luminance of detail layers 0–3 and 4.
+    pub lum_a: Vec4,
+    pub lum_b: Vec4,
 }
 
 #[derive(Asset, AsBindGroup, Reflect, Debug, Clone, Default)]
@@ -64,6 +148,12 @@ pub struct NearImagery {
     #[texture(101)]
     #[sampler(102)]
     pub texture: Option<Handle<Image>>,
+    #[texture(103, dimension = "2d_array")]
+    #[sampler(104)]
+    pub detail: Option<Handle<Image>>,
+    /// Detail layer per ~30 m cell (R channel; 255 = none), same square as `texture`.
+    #[texture(105)]
+    pub fuel: Option<Handle<Image>>,
 }
 
 impl MaterialExtension for NearImagery {
@@ -147,6 +237,12 @@ pub struct Imagery {
     near_rx: Mutex<Receiver<(DVec2, Option<Vec<u8>>)>>,
     near_retry: f32,
     pub near_bytes: u64,
+    detail: Handle<Image>,
+    detail_lum: [f32; 5],
+    /// Fuel-layer image for the near square (centre it was fetched for).
+    fuel: Option<(DVec2, Handle<Image>)>,
+    fuel_tx: Sender<(DVec2, Option<Vec<u8>>)>,
+    fuel_rx: Mutex<Receiver<(DVec2, Option<Vec<u8>>)>>,
     /// Extension shared by every terrain material (updated when the near image moves).
     near_ext: NearImagery,
     near_dirty: bool,
@@ -154,9 +250,12 @@ pub struct Imagery {
 }
 
 impl Imagery {
-    pub fn new(atlas_bounds: &LonLatBox, mats: &mut Assets<TerrainMaterial>) -> Self {
+    pub fn new(atlas_bounds: &LonLatBox, mats: &mut Assets<TerrainMaterial>, images: &mut Assets<Image>) -> Self {
         let (tx, rx) = channel();
         let (near_tx, near_rx) = channel();
+        let (fuel_tx, fuel_rx) = channel();
+        let (detail_image, detail_lum) = detail_array_image();
+        let detail = images.add(detail_image);
         let atlas = MosaicKey::covering(ATLAS_Z, atlas_bounds);
         // Until the atlas arrives, patches show a neutral dry-grass tone.
         let atlas_material = mats.add(TerrainMaterial {
@@ -182,6 +281,11 @@ impl Imagery {
             near_rx: Mutex::new(near_rx),
             near_retry: 0.0,
             near_bytes: 0,
+            detail,
+            detail_lum,
+            fuel: None,
+            fuel_tx,
+            fuel_rx: Mutex::new(fuel_rx),
             near_ext: NearImagery::default(),
             near_dirty: false,
             since_near: 0.0,
@@ -408,6 +512,7 @@ pub fn apply(
 
 /// World X/Z → near-image UV. The image is exported in EPSG:5070, the same grid as the
 /// world, so the map is exact: u = (x + origin.x − x_min)/size, v = (y_max − origin.y + z)/size.
+/// Detail fields are filled in by the caller.
 fn near_params(centre: DVec2, origin: DVec2) -> NearParams {
     let size = 2.0 * NEAR_HALF_M;
     let (x_min, y_max) = (centre.x - NEAR_HALF_M, centre.y + NEAR_HALF_M);
@@ -415,7 +520,40 @@ fn near_params(centre: DVec2, origin: DVec2) -> NearParams {
     NearParams {
         u: Vec4::new(s, 0.0, ((origin.x - x_min) / size) as f32, 1.0),
         v: Vec4::new(0.0, s, ((y_max - origin.y) / size) as f32, (NEAR_FADE_M / size) as f32),
+        ..default()
     }
+}
+
+fn fetch_fuel(tx: Sender<(DVec2, Option<Vec<u8>>)>, centre: DVec2) {
+    let (x0, y0, x1, y1) = (centre.x - NEAR_HALF_M, centre.y - NEAR_HALF_M, centre.x + NEAR_HALF_M, centre.y + NEAR_HALF_M);
+    let url = format!(
+        "{FBFM40}?bbox={x0:.0},{y0:.0},{x1:.0},{y1:.0}&bboxSR=5070&imageSR=5070&size={FUEL_PX},{FUEL_PX}&format=tiff&pixelType=U8&interpolation=RSP_NearestNeighbor&f=image"
+    );
+    ehttp::fetch(ehttp::Request::get(url), move |res| {
+        let bytes = match res {
+            Ok(r) if r.status == 200 => Some(r.bytes),
+            _ => None,
+        };
+        let _ = tx.send((centre, bytes));
+    });
+}
+
+/// Fuel-model TIFF → RGBA image whose R channel is the detail layer for each cell.
+fn fuel_image(tiff_bytes: &[u8]) -> Option<Image> {
+    use tiff::decoder::{Decoder, DecodingResult};
+    let mut dec = Decoder::new(std::io::Cursor::new(tiff_bytes)).ok()?;
+    let (w, h) = dec.dimensions().ok()?;
+    let DecodingResult::U8(codes) = dec.read_image().ok()? else { return None };
+    let rgba: Vec<u8> = codes.iter().flat_map(|&c| [fuel_layer(c), 0, 0, 255]).collect();
+    (rgba.len() == (w * h * 4) as usize).then(|| {
+        Image::new(
+            Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+            TextureDimension::D2,
+            rgba,
+            TextureFormat::Rgba8Unorm,
+            RenderAssetUsages::RENDER_WORLD,
+        )
+    })
 }
 
 fn fetch_near(tx: Sender<(DVec2, Option<Vec<u8>>)>, centre: DVec2) {
@@ -443,6 +581,14 @@ pub fn near(
     #[cfg(not(target_arch = "wasm32"))]
     if std::env::var("VR_FIRE_NEAR").is_ok_and(|v| v == "off") {
         return; // A/B comparisons
+    }
+    let fuel_arrived: Vec<_> = im.fuel_rx.lock().unwrap().try_iter().collect();
+    for (centre, bytes) in fuel_arrived {
+        im.fuel = bytes.as_deref().and_then(fuel_image).map(|img| (centre, images.add(img)));
+        if im.fuel.is_none() {
+            warn!("fuel map unavailable at {centre:?}; ground detail off here");
+        }
+        im.near_dirty = true;
     }
     let arrived: Vec<_> = im.near_rx.lock().unwrap().try_iter().collect();
     for (centre, bytes) in arrived {
@@ -475,6 +621,7 @@ pub fn near(
         if im.near.as_ref().is_none_or(|n| n.0.distance(here) > NEAR_RECENTER_M) {
             im.near_pending = Some(here);
             fetch_near(im.near_tx.clone(), here);
+            fetch_fuel(im.fuel_tx.clone(), here);
         }
     }
     if !(im.near_dirty || origin.is_changed()) {
@@ -482,8 +629,19 @@ pub fn near(
     }
     im.near_dirty = false;
     im.near_ext = match &im.near {
-        Some((centre, image)) if truck.active => NearImagery { params: near_params(*centre, origin.0), texture: Some(image.clone()) },
-        _ => NearImagery::default(),
+        Some((centre, image)) if truck.active => {
+            let mut params = near_params(*centre, origin.0);
+            // Detail uses the fuel map for the same square, so it needs the same centre.
+            let fuel = im.fuel.as_ref().filter(|(c, _)| c == centre).map(|(_, h)| h.clone());
+            let l = im.detail_lum;
+            #[cfg(not(target_arch = "wasm32"))]
+            let fuel = fuel.filter(|_| std::env::var("VR_FIRE_DETAIL").map_or(true, |v| v != "off")); // A/B runs
+            params.detail = Vec4::new(if fuel.is_some() { 1.0 } else { 0.0 }, DETAIL_TILE_M, DETAIL_STRENGTH, DETAIL_FADE_M);
+            params.lum_a = Vec4::new(l[0], l[1], l[2], l[3]);
+            params.lum_b = Vec4::new(l[4], 0.0, 0.0, 0.0);
+            NearImagery { params, texture: Some(image.clone()), detail: Some(im.detail.clone()), fuel }
+        }
+        _ => NearImagery { detail: Some(im.detail.clone()), ..default() },
     };
     // Materials created later copy `near_ext` (see `run`), so updating the existing ones is enough.
     for (_, m) in mats.iter_mut() {
@@ -527,6 +685,25 @@ mod tests {
         assert!(nw.iter().all(|v| v.abs() < 1e-4), "{nw:?}");
         assert!(se.iter().all(|v| (v - 1.0).abs() < 1e-4), "{se:?}");
         assert!(c.iter().all(|v| (v - 0.5).abs() < 1e-4), "{c:?}");
+    }
+
+    #[test]
+    fn fuel_models_map_to_detail_layers() {
+        // FBFM40: GR/GS grass, SH shrub, TU/TL/SB timber, NB 91 urban 92 snow 93 ag 98 water 99 barren.
+        let cases = [(102, 0), (122, 0), (93, 0), (145, 1), (165, 2), (189, 2), (202, 2), (99, 3), (92, 3), (91, 4), (98, NO_DETAIL), (0, NO_DETAIL), (255, NO_DETAIL)];
+        for (code, layer) in cases {
+            assert_eq!(fuel_layer(code), layer, "code {code}");
+        }
+    }
+
+    #[test]
+    fn detail_array_holds_every_layer_with_mips() {
+        let (image, lum) = detail_array_image();
+        assert_eq!(image.texture_descriptor.size.depth_or_array_layers, DETAIL_LAYERS.len() as u32);
+        assert_eq!(image.texture_descriptor.mip_level_count, 10); // 512 → 1
+        let per_layer: usize = (0..10).map(|l| (512usize >> l).pow(2) * 4).sum();
+        assert_eq!(image.data.as_ref().unwrap().len(), per_layer * DETAIL_LAYERS.len());
+        assert!(lum.iter().all(|&m| (0.05..0.9).contains(&m)), "{lum:?}");
     }
 
     #[test]

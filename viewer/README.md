@@ -78,6 +78,13 @@ per super tile far out, ~7.5 m/px for 50/30 m tiles, ~3.8 m/px for 10 m tiles, ~
 on lidar tiles. Images are stitched from whole Mercator tiles (no resampling), vertices get
 UVs from their lon/lat, mip maps are built on the CPU, and unused detail is freed.
 
+**Ground detail** (`src/imagery.rs`, `src/near.wgsl`). Within ~90 m of the camera the aerial
+colour is modulated by tiling ground textures (grass, shrub soil, timber litter, rock, road)
+chosen per ~30 m cell from the LANDFIRE LF2025 FBFM40 fuel-model map, with a noise-jittered
+lookup so cells don't read as squares. The textures in `assets/detail/` are CC0 from
+[Poly Haven](https://polyhaven.com) (withered_grass, dry_ground_rocks, forrest_ground_03,
+dry_riverbed_rock, asphalt_02), resized to 512².
+
 **Level of detail** (`src/terrain.rs`, levels in `vr_fire::lod`). The finest level whose
 node spacing is at least 0.4% of the view distance is used, so zooming in refines in
 steps of 1.7–3× instead of big pops:
