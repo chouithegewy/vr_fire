@@ -9,6 +9,7 @@
 mod limits;
 mod outbox;
 mod stats;
+mod transport;
 
 use serde_json::{Value, json};
 use stats::Stats;
