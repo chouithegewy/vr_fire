@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Offline code review of vr_fire with nine source-backed findings and three entity relationship diagrams."><title>vr_fire · Code review</title><style>
+:root{color-scheme:light;--ink:#18333d;--muted:#536970;--paper:#f4f5f1;--card:#fff;--line:#dce4df;--accent:#20766d;--nav:#142f38;--orange:#a54f25;--navw:228px}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:#176c65;text-underline-offset:3px}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid #e4a345;outline-offset:4px}.skip{position:fixed;left:12px;top:-80px;z-index:10;background:white;padding:10px}.skip:focus{top:10px}
+aside{position:fixed;inset:0 auto 0 0;width:var(--navw);background:var(--nav);color:#c2d4d4;padding:34px 25px;display:flex;flex-direction:column}.brand{color:#fff;font-size:25px;font-weight:750;letter-spacing:-1px}.brand span{color:#8ec5a8}.side-caption{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#afc9cc;margin:4px 0 38px}nav{display:grid;gap:8px}nav a{display:flex;gap:15px;padding:10px 0;color:#dce7e6;text-decoration:none;font-size:13px}nav a:hover{color:#a4d7ba}nav span{font-size:11px;color:#8aacb0;font-variant-numeric:tabular-nums}.side-bottom{margin-top:auto;border-top:1px solid #34505a;padding-top:20px;font-size:12px}.side-bottom code{color:#c0d5c8}.side-bottom a{color:#b7dacd}.dot{display:inline-block;border-radius:50%;width:7px;height:7px;background:#8fc7aa;margin-right:7px}
+main{max-width:1600px;margin-left:var(--navw);padding:44px clamp(24px,4.5vw,78px) 60px}.topline{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:34px}.eyebrow{font-size:11px;letter-spacing:1.8px;text-transform:uppercase;font-weight:750;color:var(--accent)}.quiet-button{background:transparent;border:1px solid #b6c7c1;border-radius:6px;padding:7px 13px;color:var(--ink);font-size:12px}.quiet-button:hover{background:#e8eeea}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(38px,4.1vw,64px);line-height:1.08;letter-spacing:-2.5px;font-weight:730;margin-bottom:22px}h1 em{font-style:normal;color:#27796f}h2{font-size:28px;letter-spacing:-.7px;line-height:1.2;margin-bottom:13px}h3{font-size:20px;line-height:1.4;letter-spacing:-.3px;margin-bottom:10px}.lede{font-size:17px;color:#53666c;max-width:820px;line-height:1.75}.scope{font-size:13px;color:var(--muted);max-width:900px}.scope strong{color:var(--ink)}.hero{border-bottom:1px solid var(--line);padding-bottom:32px;margin-bottom:36px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:30px 0 22px}.metric{padding:19px 20px;background:white;border:1px solid var(--line);border-radius:9px}.metric b{font-size:35px;line-height:1.2;display:block;font-weight:650;letter-spacing:-1px}.metric span{font-size:12px;color:var(--muted)}.metric small{display:block;color:var(--muted);font-size:11px}.metric.alert b{color:var(--orange)}.metric.good b{color:var(--accent)}.callout{background:#e8efea;border-left:3px solid #5a947e;padding:15px 19px;font-size:13px}.section{margin:0 0 48px}.section-intro{color:var(--muted);max-width:860px;font-size:14px}.section-top{display:flex;justify-content:space-between;align-items:center;gap:16px}.pill{font-size:11px;white-space:nowrap;border:1px solid var(--line);padding:4px 9px;border-radius:30px;color:var(--muted)}.architecture{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}.arch-card{background:white;border:1px solid var(--line);border-radius:8px;padding:20px}.arch-card h3{font-size:16px}.arch-card p{font-size:13px;margin-bottom:9px;color:var(--muted)}.arch-card code{font-size:11px;color:#266d65}
+.filters{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:22px 0 12px}.filters input{flex:1 1 240px;min-width:0}.filters input,.filters select{background:#fff;border:1px solid #bccbc4;border-radius:6px;padding:9px 11px;font-size:13px;color:var(--ink)}.result-count{font-size:12px;color:var(--muted);margin:12px 0}.finding{background:var(--card);border:1px solid var(--line);border-radius:9px;margin:12px 0;padding:22px 24px;scroll-margin-top:25px}.finding:target{border-color:#408b76;box-shadow:0 0 0 3px #cee4d8}.finding-meta{display:flex;align-items:center;gap:11px;font-size:11px;color:var(--muted);margin-bottom:12px}.finding-id{font-weight:750;letter-spacing:1px;text-decoration:none;color:#436c6c}.badge{padding:2px 7px;font-weight:750;border-radius:4px}.p1{background:#fff0e5;color:#a2481d}.p2{background:#eef1dc;color:#616925}.confidence{margin-left:auto;font-size:10px;border:1px solid #d4dfda;border-radius:20px;padding:2px 8px}.confidence.confirmed{background:#eaf4ee;color:#207052;border-color:#c9e1d0}.impact{font-size:14px;color:#496168;margin-bottom:15px;max-width:1000px}summary{cursor:pointer;font-size:12px;font-weight:650;color:#276c63;user-select:none}details[open]>summary{margin-bottom:18px}.finding-body{border-top:1px solid var(--line);margin-top:16px;padding-top:20px}dl{display:grid;grid-template-columns:155px 1fr;gap:14px 18px;margin:0 0 22px;font-size:13px}dt{font-weight:650;color:#3c6466}dd{margin:0}.repro{background:#edf5ee;padding:12px 15px;border-radius:6px}.evidence{margin-top:12px;border:1px solid var(--line);border-radius:5px;overflow:hidden}.evidence-label{background:#eff3ef;padding:8px 13px;font-size:11px}pre{font:11px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace;margin:0;padding:15px 12px;overflow:auto;background:#f9faf7;color:#244651}pre .ln{display:inline-block;width:4em;color:#687d81;user-select:none}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88em;overflow-wrap:anywhere}pre code{font-size:inherit;overflow-wrap:normal}.empty{padding:25px;background:#fff;border:1px dashed #c9d5ce;border-radius:8px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:#496168;background:#e8efea;padding:12px 16px;border-radius:5px;margin-top:22px}.diagram-card{background:#fff;border:1px solid var(--line);border-radius:9px;padding:23px;margin-top:18px}.diagram-heading{display:flex;justify-content:space-between;gap:20px;align-items:center}.diagram-heading h3{margin:5px 0 7px;font-size:20px}.diagram-heading p{font-size:13px;color:var(--muted);margin-bottom:16px}.zoom-tools{display:flex;gap:5px}.zoom-tools button{background:#f5f7f3;border:1px solid #cad8d0;border-radius:5px;color:#305651;padding:4px 9px;font-size:12px}.diagram-viewport{overflow:auto;border-top:1px solid #e5ece6;border-bottom:1px solid #e5ece6;padding:16px 0;background:#fcfdfa}.diagram-inner{width:100%;min-width:620px}.diagram-inner svg{display:block;width:100%;height:auto}.diagram-note{font-size:12px;color:var(--muted);margin:18px 0 14px}.source-list{font-size:10px;margin:18px 0 0;color:var(--muted);overflow-wrap:anywhere}.dictionary{font-size:12px}.dictionary table{font-size:12px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#526e70;text-align:left;background:#eaf0eb}th,td{padding:15px 16px;border-bottom:1px solid var(--line);vertical-align:top}td p{margin:7px 0 0;color:var(--muted);font-size:12px}.validation-table{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.validation-table td:first-child{width:27%}.pass{font-size:11px;color:#247451}.small-note{font-size:12px;color:var(--muted);margin-top:15px}.two-cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px}.text-card{padding:23px;border:1px solid var(--line);border-radius:8px;background:#fff}.text-card h3{font-size:17px}.text-card ul{margin:12px 0 0;padding-left:18px}.text-card li{font-size:12px;color:#4d656b;margin:10px 0}.roadmap{display:grid;grid-template-columns:1fr 1fr;gap:13px}.roadmap-item{display:flex;gap:18px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:20px}.step-number{font-size:23px;font-weight:300;color:#418476}.roadmap h3{font-size:15px;margin-bottom:7px}.roadmap p{font-size:12px;color:var(--muted);margin-bottom:6px}.roadmap small{font-size:10px;color:#28776c}footer{border-top:1px solid var(--line);padding-top:20px;color:var(--muted);font-size:11px;display:flex;gap:20px;justify-content:space-between}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}[hidden]{display:none!important}
+@media(max-width:1050px){:root{--navw:185px}aside{padding:28px 18px}main{padding:30px 25px}.architecture{grid-template-columns:1fr}.arch-card{padding:16px}.metrics{gap:8px}.metric{padding:14px}.metric b{font-size:29px}.two-cols{grid-template-columns:1fr}.diagram-card{padding:16px}}
+@media(max-width:720px){aside{position:static;width:auto;padding:18px 20px;display:block}.side-caption{margin:0 0 12px}.brand{font-size:23px}nav{display:flex;overflow:auto;gap:16px}nav a{white-space:nowrap;padding:4px 0;font-size:11px;gap:6px}.side-bottom{display:none}main{margin:0;padding:26px 18px}.topline{margin-bottom:25px}.topline .eyebrow{font-size:9px;letter-spacing:1px}h1{font-size:42px;letter-spacing:-1.8px}.lede{font-size:15px}.metrics{grid-template-columns:1fr 1fr}.finding{padding:18px 16px}.finding h3{font-size:18px}.finding-meta{gap:7px;flex-wrap:wrap}.confidence{font-size:9px}dl{grid-template-columns:1fr;gap:5px}dd{margin-bottom:12px}.roadmap{grid-template-columns:1fr}.diagram-heading{align-items:flex-start}.zoom-tools{flex-shrink:0}.diagram-heading h3{font-size:17px}.section-top{align-items:flex-start}.section-top h2{font-size:25px}footer{display:block}.validation-table td{padding:12px 10px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{@page{size:A4;margin:14mm}body{font-size:10pt;background:white}aside,.topline button,.filters,.result-count,.zoom-tools,.skip,.no-print{display:none!important}main{margin:0;padding:0;max-width:none}h1{font-size:32pt}.hero{padding-bottom:12px;margin-bottom:20px}.metrics{margin:18px 0}.metric{padding:10px}.metric b{font-size:24pt}.finding{break-inside:avoid;padding:14px;margin:10px 0}.finding-details>summary{display:none}pre{white-space:pre-wrap;font-size:8pt}.diagram-card{break-before:page;break-inside:avoid;padding:12px}.diagram-inner{min-width:0;width:100%!important}.diagram-viewport{overflow:visible}.dictionary{display:none}.source-list{font-size:7pt}.section{margin-bottom:25px}.two-cols{grid-template-columns:1fr}.roadmap-item{break-inside:avoid}a{color:inherit;text-decoration:none}.table-wrap{overflow:visible}footer{font-size:8pt}}
+</style></head><body>
+<a class="skip" href="#main">Skip to report</a>
+<aside><div class="brand">vr<span>_</span>fire</div><div class="side-caption">Engineering review</div><nav aria-label="Report sections"><a href="#overview"><span>01</span>Overview</a><a href="#findings"><span>02</span>Findings</a><a href="#data-model"><span>03</span>Data model / ERDs</a><a href="#validation"><span>04</span>Validation</a><a href="#next"><span>05</span>Remediation</a></nav><div class="side-bottom"><p><span class="dot"></span>Offline report<br>25 September 2026</p><p>Reviewed revision<br><code>c15e0beb052d</code></p><a href="README.md">Markdown version ↗</a></div></aside>
+<main id="main"><div class="topline"><span class="eyebrow">California terrain · Rust workspace</span><button class="quiet-button" id="print">Print / save PDF</button></div>
+<header class="hero" id="overview"><h1>Code, terrain<br>& <em>the connections.</em></h1><p class="lede">The pipeline has useful geometry, reprojection, codec and cache tests. The main gaps are failure recovery, bounded resource use, and preservation of terrain validity. Nine actionable findings are documented below; four have bounded, offline reproductions.</p><div class="metrics"><div class="metric"><b>9</b><span>Actionable findings</span><small>1 P1 · 8 P2</small></div><div class="metric alert"><b>1</b><span>High-priority issue</span><small>Relay resource bounds</small></div><div class="metric good"><b>94</b><span>Existing tests passed</span><small>1 download test ignored</small></div><div class="metric"><b>4</b><span>Defects reproduced</span><small>Bounded offline probes</small></div></div><p class="scope"><strong>Review boundary.</strong> Repository-wide static review, with deeper tracing of ingest/store/pack, viewer streaming, multiplayer and the lidar service. This is a snapshot of local source and checked-in deployment configuration, not an audit of the running server. No application fixes or deployments were performed.</p><div class="callout"><strong>Start here:</strong> bound the relay's outbound queues (<a href="#F01">F01</a>), then preserve terrain validity through storage and packing (<a href="#F03">F03</a>). Passing unit tests leave these failure paths uncovered.</div></header>
+<section class="section" aria-labelledby="architecture-title"><span class="eyebrow">System map</span><h2 id="architecture-title">Five crates, three operating paths</h2><div class="architecture"><div class="arch-card"><h3>01 / Offline terrain</h3><p>GeoJSON + USGS sources → EPSG:5070 store → baked meshes or compressed viewer patches.</p><code>vr_fire · compress-lab</code></div><div class="arch-card"><h3>02 / Interactive viewer</h3><p>Packed terrain with COG fallback, imagery mosaics, local truck physics and remote player poses.</p><code>viewer · Bevy · native / wasm</code></div><div class="arch-card"><h3>03 / Supporting services</h3><p>WebSocket forwarding and event stats; a separate worker fetches and caches requested lidar.</p><code>relay · hires · nginx / systemd</code></div></div><p class="small-note">No relational database is defined. The ERDs below describe concrete Rust structures, file records, map keys and their cardinalities.</p></section>
+<section class="section" id="findings"><div class="section-top"><div><span class="eyebrow">Review register</span><h2>Findings with a path to resolution</h2></div><span class="pill">P1 = high · P2 = medium</span></div><p class="section-intro">“Reproduced” means a bundled synthetic probe observed the defect. “Code-confirmed” means the cause and reachable path were traced in source; end-to-end impact has not been measured. Each finding includes a trigger, recommendation and acceptance check.</p><div class="filters"><label class="sr-only" for="search">Search findings</label><input id="search" type="search" placeholder="Search findings, files or symptoms…"><label class="sr-only" for="priority">Priority</label><select id="priority"><option value="">All priorities</option><option>P1</option><option>P2</option></select><label class="sr-only" for="area">Component</label><select id="area"><option value="">All components</option><option>Relay</option><option>Viewer</option><option>Pipeline</option><option>Codec</option><option>Lidar</option></select><button class="quiet-button" id="expand">Expand all</button></div><p class="result-count" id="result-count" role="status" aria-live="polite">9 of 9 findings shown</p><noscript><p class="small-note">Search and zoom require JavaScript; all findings and diagrams remain readable without it.</p></noscript><div id="finding-list"><article class="finding" id="F01" data-priority="P1" data-area="Relay" data-confidence="Code-confirmed"><div class="finding-meta"><a class="finding-id" href="#F01">F01</a><span class="badge p1">P1</span><span>Relay</span><span class="confidence ">Code-confirmed</span></div><h3>A slow peer can grow an unbounded relay queue</h3><p class="impact">One client that stops reading can accumulate copies of other players&#39; messages indefinitely. The checked-in relay service has a 64 MB memory cap, so queue growth can restart the service and disconnect every player.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Keep one WebSocket connection open without reading while other clients continue sending state. No high-volume live test was run.</dd><dt>Cause</dt><dd>Each peer gets std::sync::mpsc::channel, which has no capacity limit. broadcast clones each message into every recipient queue. The peer loop performs blocking ws.send without a write timeout. A blocked reader therefore prevents its own queue from draining while producers continue enqueueing. There is also no per-client message-rate limit.</dd><dt>Recommended change</dt><dd>Use bounded per-peer queues, coalesce replaceable pose updates, and disconnect a peer on sustained backpressure or a write deadline. Apply message and frame size limits at the WebSocket layer, plus a modest ingress rate limit.</dd><dt>Acceptance check</dt><dd>With a non-reading peer and a bounded stream of local state messages, queue depth and process memory stay bounded; healthy peers continue receiving updates and the stalled peer is removed.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../relay/src/main.rs">relay/src/main.rs</a> · lines 29–50</div><pre><code><span class="ln">29</span>fn broadcast(peers: &amp;Peers, from: u64, text: &amp;str, include_self: bool) {
+<span class="ln">30</span>    for (id, tx) in peers.lock().unwrap().iter() {
+<span class="ln">31</span>        if include_self || *id != from {
+<span class="ln">32</span>            let _ = tx.send(text.to_string());
+<span class="ln">33</span>        }
+<span class="ln">34</span>    }
+<span class="ln">35</span>}
+<span class="ln">36</span>
+<span class="ln">37</span>fn serve(stream: TcpStream, id: u64, peers: Peers, stats: Shared) {
+<span class="ln">38</span>    let _ = stream.set_nodelay(true);
+<span class="ln">39</span>    let Ok(mut ws) = accept(stream) else { return };
+<span class="ln">40</span>    let _ = ws.get_ref().set_read_timeout(Some(Duration::from_millis(20)));
+<span class="ln">41</span>    let (tx, rx) = channel::&lt;String&gt;();
+<span class="ln">42</span>    peers.lock().unwrap().insert(id, tx);
+<span class="ln">43</span>    stats.lock().unwrap().join(id, now());
+<span class="ln">44</span>    let _ = ws.send(Message::text(json!({&quot;t&quot;: &quot;welcome&quot;, &quot;id&quot;: id}).to_string()));
+<span class="ln">45</span>    eprintln!(&quot;+ {id} ({} online)&quot;, peers.lock().unwrap().len());
+<span class="ln">46</span>    let mut last_msg = std::time::Instant::now();
+<span class="ln">47</span>    loop {
+<span class="ln">48</span>        for out in rx.try_iter() {
+<span class="ln">49</span>            if ws.send(Message::text(out)).is_err() {
+<span class="ln">50</span>                break;</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/deploy/vr-fire-relay.service">viewer/deploy/vr-fire-relay.service</a> · lines 9–15</div><pre><code><span class="ln">9</span>Environment=RELAY_LOG=/home/thehomiedavid/vr_fire/players.jsonl
+<span class="ln">10</span>ExecStart=/home/thehomiedavid/vr_fire/relay
+<span class="ln">11</span>Restart=always
+<span class="ln">12</span>RestartSec=2
+<span class="ln">13</span>MemoryMax=64M
+<span class="ln">14</span>
+<span class="ln">15</span>[Install]</code></pre></div></div></details></article>
+<article class="finding" id="F02" data-priority="P2" data-area="Viewer" data-confidence="Code-confirmed"><div class="finding-meta"><a class="finding-id" href="#F02">F02</a><span class="badge p2">P2</span><span>Viewer</span><span class="confidence ">Code-confirmed</span></div><h3>Decoded COG terrain is retained for the entire session</h3><p class="impact">Exploring new areas in COG mode, or in areas that fall back from packed terrain, keeps adding CPU-resident height blocks even after their meshes disappear. Long browser sessions can exhaust memory.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Pan or drive through many distinct source blocks. A typical full 512 × 512 f32 block occupies 1 MiB before container overhead; 1,000 retained blocks account for about 1 GiB.</dd><dt>Cause</dt><dd>Cog.tiles retains every Ready(Arc&lt;TileData&gt;) entry. The viewer removes unwanted built patches, but there is no corresponding removal or capacity policy in the COG cache. Dropping meshes does not release the Arc still owned by Cog.tiles. The imagery cache has an eviction path; the COG cache does not.</dd><dt>Recommended change</dt><dd>Track source blocks needed by active jobs and nearby patches, then apply a byte-budgeted LRU to unpinned blocks. Prune stale queued work when the camera moves.</dd><dt>Acceptance check</dt><dd>Replay a fixed route across many disjoint areas twice and verify that decoded-cache bytes plateau at the configured budget while active jobs complete correctly.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/cog.rs">viewer/src/cog.rs</a> · lines 73–99</div><pre><code><span class="ln">73</span>pub struct TileData {
+<span class="ln">74</span>    pub w: u32,
+<span class="ln">75</span>    pub h: u32,
+<span class="ln">76</span>    pub data: Vec&lt;f32&gt;,
+<span class="ln">77</span>}
+<span class="ln">78</span>
+<span class="ln">79</span>pub enum TileState {
+<span class="ln">80</span>    Queued,
+<span class="ln">81</span>    Pending,
+<span class="ln">82</span>    Ready(Arc&lt;TileData&gt;),
+<span class="ln">83</span>    Failed,
+<span class="ln">84</span>}
+<span class="ln">85</span>
+<span class="ln">86</span>enum Msg {
+<span class="ln">87</span>    Header(Cell, Option&lt;Vec&lt;u8&gt;&gt;),
+<span class="ln">88</span>    Tile(TileKey, Option&lt;Vec&lt;u8&gt;&gt;),
+<span class="ln">89</span>}
+<span class="ln">90</span>
+<span class="ln">91</span>#[derive(Resource)]
+<span class="ln">92</span>pub struct Cog {
+<span class="ln">93</span>    pub cells: HashMap&lt;Cell, CellState&gt;,
+<span class="ln">94</span>    pub tiles: HashMap&lt;TileKey, TileState&gt;,
+<span class="ln">95</span>    queue: Vec&lt;TileKey&gt;,
+<span class="ln">96</span>    inflight: usize,
+<span class="ln">97</span>    tx: Sender&lt;Msg&gt;,
+<span class="ln">98</span>    rx: Mutex&lt;Receiver&lt;Msg&gt;&gt;,
+<span class="ln">99</span>    pub bytes_fetched: u64,</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/cog.rs">viewer/src/cog.rs</a> · lines 180–193</div><pre><code><span class="ln">180</span>                Msg::Tile(key, bytes) =&gt; {
+<span class="ln">181</span>                    let meta = match self.cells.get(&amp;key.cell) {
+<span class="ln">182</span>                        Some(CellState::Ready(m)) =&gt; m.clone(),
+<span class="ln">183</span>                        _ =&gt; continue,
+<span class="ln">184</span>                    };
+<span class="ln">185</span>                    let state = bytes
+<span class="ln">186</span>                        .and_then(|b| {
+<span class="ln">187</span>                            self.bytes_fetched += b.len() as u64;
+<span class="ln">188</span>                            decode_tile(&amp;meta, key, b).map_err(|e| warn!(&quot;decode {key:?}: {e}&quot;)).ok()
+<span class="ln">189</span>                        })
+<span class="ln">190</span>                        .map(|t| TileState::Ready(Arc::new(t)))
+<span class="ln">191</span>                        .unwrap_or(TileState::Failed);
+<span class="ln">192</span>                    self.tiles.insert(key, state);
+<span class="ln">193</span>                }</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · lines 424–440</div><pre><code><span class="ln">424</span>    // Despawn built patches no longer wanted; set visibility on the rest.
+<span class="ln">425</span>    let stale: Vec&lt;Patch&gt; = terrain.built.keys().filter(|p| !wanted.contains_key(p)).copied().collect();
+<span class="ln">426</span>    for p in stale {
+<span class="ln">427</span>        if let Some(b) = terrain.built.remove(&amp;p) {
+<span class="ln">428</span>            commands.entity(b.entity).despawn();
+<span class="ln">429</span>        }
+<span class="ln">430</span>    }
+<span class="ln">431</span>    for (p, b) in &amp;terrain.built {
+<span class="ln">432</span>        if let Ok(mut v) = vis.get_mut(b.entity) {
+<span class="ln">433</span>            let want = if show.contains(p) { Visibility::Inherited } else { Visibility::Hidden };
+<span class="ln">434</span>            if *v != want {
+<span class="ln">435</span>                *v = want;
+<span class="ln">436</span>            }
+<span class="ln">437</span>        }
+<span class="ln">438</span>    }
+<span class="ln">439</span>    // Refresh the job queue: drop unwanted jobs, add new ones, sort nearest first.
+<span class="ln">440</span>    terrain.jobs.retain(|j| wanted.contains_key(&amp;j.patch));</code></pre></div></div></details></article>
+<article class="finding" id="F03" data-priority="P2" data-area="Pipeline" data-confidence="Reproduced"><div class="finding-meta"><a class="finding-id" href="#F03">F03</a><span class="badge p2">P2</span><span>Pipeline</span><span class="confidence confirmed">Reproduced</span></div><h3>Packing turns valid zero-metre terrain into a 300-metre depression</h3><p class="impact">Valid sea-level terrain can become a deep pit in the packed viewer. Packed and raw COG modes then disagree on geometry and collision heights.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Pack an OK tile containing an actual 0.0 m sample, even when filled_samples is zero.</dd><dt>Cause</dt><dd>Ingest represents missing samples as 0.0 and stores only a count of filled samples. Pack subsequently treats every exact zero as missing and replaces it with OCEAN_M (-300). Once the sample-level validity mask has been discarded, genuine zeros cannot be distinguished from filled ocean nodes.</dd><dt>Recommended change</dt><dd>Preserve a per-sample validity mask or an explicit nodata representation through ingest and store, and use that mask during packing. Existing stores need a documented migration or rebuild to recover that information.</dd><dt>Acceptance check</dt><dd>A tile containing both a real zero and a missing sample preserves the real zero within quantization error while only the missing sample becomes OCEAN_M. Compare packed heights to the source with the same mask.</dd><dt>Observed reproduction</dt><dd class="repro">The bundled probe writes a synthetic valid all-zero tile with filled_samples=0, calls run_pack, decodes t0/1_1.vrh, and observes -300.0 m at the first interior sample.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../src/pack.rs">src/pack.rs</a> · lines 44–51</div><pre><code><span class="ln">44</span>        let data = match self.index.get(t).map(|e| e.status) {
+<span class="ln">45</span>            // Store fills no-data with exactly 0.0 (sea level); the viewer wants OCEAN_M.
+<span class="ln">46</span>            Some(TileStatus::Ok) =&gt; self.store.read_tile(&amp;self.grid, t).ok().flatten().map(|mut d| {
+<span class="ln">47</span>                d.iter_mut().filter(|h| **h == 0.0).for_each(|h| *h = OCEAN_M);
+<span class="ln">48</span>                Arc::new(d)
+<span class="ln">49</span>            }),
+<span class="ln">50</span>            Some(TileStatus::Empty) =&gt; Some(Arc::new(vec![OCEAN_M; NODES_PER_SIDE * NODES_PER_SIDE])),
+<span class="ln">51</span>            _ =&gt; None,</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../src/reproject.rs">src/reproject.rs</a> · lines 49–55</div><pre><code><span class="ln">49</span>pub struct TileHeights {
+<span class="ln">50</span>    pub tile: TileId,
+<span class="ln">51</span>    /// 376 × 376 heights (m, NAVD88), row-major, north row first.
+<span class="ln">52</span>    pub data: Vec&lt;f32&gt;,
+<span class="ln">53</span>    /// Nodes set to sea level because no source had data.
+<span class="ln">54</span>    pub filled: u32,
+<span class="ln">55</span>}</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../src/reproject.rs">src/reproject.rs</a> · lines 71–76</div><pre><code><span class="ln">71</span>            match sources.sample(lon, lat) {
+<span class="ln">72</span>                Some(h) =&gt; data.push(h),
+<span class="ln">73</span>                None =&gt; {
+<span class="ln">74</span>                    data.push(SEA_LEVEL_M);
+<span class="ln">75</span>                    filled += 1;
+<span class="ln">76</span>                }</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../src/lod.rs">src/lod.rs</a> · lines 17–19</div><pre><code><span class="ln">17</span>/// Height used for &quot;no data&quot; (ocean): far below the viewer&#39;s water plane, and below
+<span class="ln">18</span>/// Death Valley (−86 m) so dry basins never flood.
+<span class="ln">19</span>pub const OCEAN_M: f32 = -300.0;</code></pre></div></div></details></article>
+<article class="finding" id="F04" data-priority="P2" data-area="Viewer" data-confidence="Code-confirmed"><div class="finding-meta"><a class="finding-id" href="#F04">F04</a><span class="badge p2">P2</span><span>Viewer</span><span class="confidence ">Code-confirmed</span></div><h3>A transient COG failure becomes permanent missing terrain</h3><p class="impact">A temporary HTTP error, connection failure or decode error can flatten otherwise valid land to ocean for the rest of the application session. Retrying the terrain source does not clear the COG failure entries.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Fail one header or block request once, then restore the connection.</dd><dt>Cause</dt><dd>fetch_range drops HTTP status/error distinctions and returns None for any unsuccessful response. pump records that as CellState::Missing or TileState::Failed. Subsequent cell/tile calls immediately return Some(None), with no retry path or expiry. run_jobs treats these terminal failures as completed work and samples OCEAN_M into the mesh. set_source clears terrain work but retains the separate Cog resource.</dd><dt>Recommended change</dt><dd>Distinguish authoritative absence from transient transport and decode failures. Add bounded retries with backoff and an explicit retry state; keep a coarser valid patch visible while retrying.</dd><dt>Acceptance check</dt><dd>A local response sequence of 503 followed by valid range bytes recovers automatically; an actual absence has a separate state and policy. The recovered mesh matches a clean load.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/cog.rs">viewer/src/cog.rs</a> · lines 117–125</div><pre><code><span class="ln">117</span>fn fetch_range(url: String, start: u64, end_inclusive: u64, on_done: impl FnOnce(Option&lt;Vec&lt;u8&gt;&gt;) + Send + &#39;static) {
+<span class="ln">118</span>    let mut req = ehttp::Request::get(url);
+<span class="ln">119</span>    req.headers.insert(&quot;Range&quot;, format!(&quot;bytes={start}-{end_inclusive}&quot;));
+<span class="ln">120</span>    ehttp::fetch(req, move |res| {
+<span class="ln">121</span>        on_done(match res {
+<span class="ln">122</span>            Ok(r) if r.status == 200 || r.status == 206 =&gt; Some(r.bytes),
+<span class="ln">123</span>            _ =&gt; None,
+<span class="ln">124</span>        })
+<span class="ln">125</span>    });</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/cog.rs">viewer/src/cog.rs</a> · lines 133–158</div><pre><code><span class="ln">133</span>    /// Cell metadata if the header is loaded; requests it otherwise. `Some(None)` = no data (ocean).
+<span class="ln">134</span>    pub fn cell(&amp;mut self, cell: Cell) -&gt; Option&lt;Option&lt;Arc&lt;CellMeta&gt;&gt;&gt; {
+<span class="ln">135</span>        match self.cells.get(&amp;cell) {
+<span class="ln">136</span>            Some(CellState::Ready(m)) =&gt; Some(Some(m.clone())),
+<span class="ln">137</span>            Some(CellState::Missing) =&gt; Some(None),
+<span class="ln">138</span>            Some(CellState::Pending) =&gt; None,
+<span class="ln">139</span>            None =&gt; {
+<span class="ln">140</span>                self.cells.insert(cell, CellState::Pending);
+<span class="ln">141</span>                self.inflight += 1;
+<span class="ln">142</span>                let tx = self.tx.clone();
+<span class="ln">143</span>                fetch_range(cell.url(), 0, HEADER_BYTES - 1, move |b| {
+<span class="ln">144</span>                    let _ = tx.send(Msg::Header(cell, b));
+<span class="ln">145</span>                });
+<span class="ln">146</span>                None
+<span class="ln">147</span>            }
+<span class="ln">148</span>        }
+<span class="ln">149</span>    }
+<span class="ln">150</span>
+<span class="ln">151</span>    /// Tile data if loaded; queues the fetch otherwise. `Some(None)` = failed / no data.
+<span class="ln">152</span>    pub fn tile(&amp;mut self, key: TileKey) -&gt; Option&lt;Option&lt;Arc&lt;TileData&gt;&gt;&gt; {
+<span class="ln">153</span>        match self.tiles.get(&amp;key) {
+<span class="ln">154</span>            Some(TileState::Ready(t)) =&gt; Some(Some(t.clone())),
+<span class="ln">155</span>            Some(TileState::Failed) =&gt; Some(None),
+<span class="ln">156</span>            Some(_) =&gt; None,
+<span class="ln">157</span>            None =&gt; {
+<span class="ln">158</span>                self.tiles.insert(key, TileState::Queued);</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/cog.rs">viewer/src/cog.rs</a> · lines 170–192</div><pre><code><span class="ln">170</span>                Msg::Header(cell, bytes) =&gt; {
+<span class="ln">171</span>                    let state = bytes
+<span class="ln">172</span>                        .and_then(|b| {
+<span class="ln">173</span>                            self.bytes_fetched += b.len() as u64;
+<span class="ln">174</span>                            parse_header(b).map_err(|e| warn!(&quot;{}: bad header: {e}&quot;, cell.name())).ok()
+<span class="ln">175</span>                        })
+<span class="ln">176</span>                        .map(|m| CellState::Ready(Arc::new(m)))
+<span class="ln">177</span>                        .unwrap_or(CellState::Missing);
+<span class="ln">178</span>                    self.cells.insert(cell, state);
+<span class="ln">179</span>                }
+<span class="ln">180</span>                Msg::Tile(key, bytes) =&gt; {
+<span class="ln">181</span>                    let meta = match self.cells.get(&amp;key.cell) {
+<span class="ln">182</span>                        Some(CellState::Ready(m)) =&gt; m.clone(),
+<span class="ln">183</span>                        _ =&gt; continue,
+<span class="ln">184</span>                    };
+<span class="ln">185</span>                    let state = bytes
+<span class="ln">186</span>                        .and_then(|b| {
+<span class="ln">187</span>                            self.bytes_fetched += b.len() as u64;
+<span class="ln">188</span>                            decode_tile(&amp;meta, key, b).map_err(|e| warn!(&quot;decode {key:?}: {e}&quot;)).ok()
+<span class="ln">189</span>                        })
+<span class="ln">190</span>                        .map(|t| TileState::Ready(Arc::new(t)))
+<span class="ln">191</span>                        .unwrap_or(TileState::Failed);
+<span class="ln">192</span>                    self.tiles.insert(key, state);</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · lines 631–660</div><pre><code><span class="ln">631</span>            Stage::Wait(keys, cells) =&gt; {
+<span class="ln">632</span>                planning += 1;
+<span class="ln">633</span>                let next = if !cells.is_empty() {
+<span class="ln">634</span>                    let headers_done = cells.iter().all(|c| cog.cells.get(c).is_some_and(|s| !matches!(s, crate::cog::CellState::Pending)));
+<span class="ln">635</span>                    headers_done.then_some(Stage::Plan)
+<span class="ln">636</span>                } else {
+<span class="ln">637</span>                    let keys = keys.clone();
+<span class="ln">638</span>                    keys.iter().all(|k| cog.tile(*k).is_some()).then_some(Stage::Build)
+<span class="ln">639</span>                };
+<span class="ln">640</span>                let building = matches!(next, Some(Stage::Build));
+<span class="ln">641</span>                if let Some(stage) = next {
+<span class="ln">642</span>                    terrain.jobs[i].stage = stage;
+<span class="ln">643</span>                }
+<span class="ln">644</span>                if !building {
+<span class="ln">645</span>                    i += 1;
+<span class="ln">646</span>                }
+<span class="ln">647</span>            }
+<span class="ln">648</span>            Stage::Build =&gt; {
+<span class="ln">649</span>                let m = spec.n + 2;
+<span class="ln">650</span>                let job = &amp;mut terrain.jobs[i];
+<span class="ln">651</span>                // COG path samples row by row within the budget; packed patches arrive complete.
+<span class="ln">652</span>                while job.heights.len() &lt; m * m &amp;&amp; start.elapsed().as_secs_f64() * 1e3 &lt; FRAME_BUDGET_MS {
+<span class="ln">653</span>                    let row = job.heights.len() / m;
+<span class="ln">654</span>                    for ii in 0..m {
+<span class="ln">655</span>                        let (lon, lat) = job.ll[row * m + ii];
+<span class="ln">656</span>                        let h = match cog.sample(lon, lat, spec.level) {
+<span class="ln">657</span>                            Some(Some(h)) =&gt; h,
+<span class="ln">658</span>                            _ =&gt; OCEAN_M,
+<span class="ln">659</span>                        };
+<span class="ln">660</span>                        job.heights.push(h);</code></pre></div></div></details></article>
+<article class="finding" id="F05" data-priority="P2" data-area="Viewer" data-confidence="Code-confirmed"><div class="finding-meta"><a class="finding-id" href="#F05">F05</a><span class="badge p2">P2</span><span>Viewer</span><span class="confidence ">Code-confirmed</span></div><h3>Switching terrain source can strand a lidar tile in Building</h3><p class="impact">A lidar request can remain marked as building indefinitely, with no mesh and no way to restart it in the current session.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Press C after a successful lidar download creates a Stage::Build job but before that job is built. The frame budget permits this state to persist between frames.</dd><dt>Cause</dt><dd>set_source preserves already-built lidar tiles but clears all jobs, including pending Patch::Hires build jobs. The hires map still contains HiresState::Building. select_patches marks that patch wanted with f64::MAX, explicitly excludes such entries from new-job creation, and polling handles only Waiting. request_hires uses or_insert, so another request cannot reset the stuck entry.</dd><dt>Recommended change</dt><dd>Preserve queued lidar jobs when changing the regular terrain source, or explicitly reset affected lidar states to a requestable state. Make the job and public progress state transition together.</dd><dt>Acceptance check</dt><dd>Queue a downloaded lidar build, switch Compressed → Cog before building, then advance jobs. The tile reaches Ready or an explicit recoverable error; requesting again must not silently do nothing.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · lines 288–310</div><pre><code><span class="ln">288</span>    /// Switch height source and rebuild everything from it.
+<span class="ln">289</span>    pub fn set_source(&amp;mut self, source: Source, commands: &amp;mut Commands) {
+<span class="ln">290</span>        if self.source == source {
+<span class="ln">291</span>            return;
+<span class="ln">292</span>        }
+<span class="ln">293</span>        self.source = source;
+<span class="ln">294</span>        // Lidar tiles don&#39;t depend on the source: keep them.
+<span class="ln">295</span>        let all: Vec&lt;(Patch, Built)&gt; = self.built.drain().collect();
+<span class="ln">296</span>        for (p, b) in all {
+<span class="ln">297</span>            if matches!(p, Patch::Hires { .. }) {
+<span class="ln">298</span>                self.built.insert(p, b);
+<span class="ln">299</span>            } else {
+<span class="ln">300</span>                commands.entity(b.entity).despawn();
+<span class="ln">301</span>            }
+<span class="ln">302</span>        }
+<span class="ln">303</span>        self.jobs.clear();
+<span class="ln">304</span>        self.packed.clear();
+<span class="ln">305</span>        self.since_update = 1.0;
+<span class="ln">306</span>    }
+<span class="ln">307</span>
+<span class="ln">308</span>    /// Ask the `hires` service for 1 m lidar under tile `t` (no-op if already requested).
+<span class="ln">309</span>    pub fn request_hires(&amp;mut self, t: TileId) {
+<span class="ln">310</span>        self.hires.entry(t).or_insert(HiresState::Waiting { age: 0.0, next_poll: 0.0, polling: false });</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · lines 417–421</div><pre><code><span class="ln">417</span>    // Lidar tiles are never evicted; they&#39;re only drawn while their super tile is split.
+<span class="ln">418</span>    for (t, st) in &amp;terrain.hires {
+<span class="ln">419</span>        if matches!(st, HiresState::Building | HiresState::Ready) {
+<span class="ln">420</span>            wanted.insert(Patch::Hires { t: *t }, f64::MAX);
+<span class="ln">421</span>        }</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · lines 439–445</div><pre><code><span class="ln">439</span>    // Refresh the job queue: drop unwanted jobs, add new ones, sort nearest first.
+<span class="ln">440</span>    terrain.jobs.retain(|j| wanted.contains_key(&amp;j.patch));
+<span class="ln">441</span>    let queued: HashSet&lt;Patch&gt; = terrain.jobs.iter().map(|j| j.patch).collect();
+<span class="ln">442</span>    let new: Vec&lt;Job&gt; = wanted
+<span class="ln">443</span>        .iter()
+<span class="ln">444</span>        .filter(|(p, prio)| **prio != f64::MAX &amp;&amp; !terrain.built.contains_key(p) &amp;&amp; !queued.contains(p))
+<span class="ln">445</span>        .map(|(p, prio)| terrain.new_job(*p, *prio))</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · lines 555–564</div><pre><code><span class="ln">555</span>    for (t, status, bytes) in lidar {
+<span class="ln">556</span>        let state = match status {
+<span class="ln">557</span>            200 =&gt; match vr_fire::codec::decode(&amp;bytes) {
+<span class="ln">558</span>                Ok((side, h)) if side == lod::hires_nodes() + 2 =&gt; {
+<span class="ln">559</span>                    terrain.packed_bytes += bytes.len() as u64;
+<span class="ln">560</span>                    terrain.jobs.insert(0, Job { patch: Patch::Hires { t }, prio: -1.0, stage: Stage::Build, ll: Vec::new(), heights: h });
+<span class="ln">561</span>                    HiresState::Building
+<span class="ln">562</span>                }
+<span class="ln">563</span>                _ =&gt; HiresState::Unavailable(&quot;corrupt lidar patch&quot;.into()),
+<span class="ln">564</span>            },</code></pre></div></div></details></article>
+<article class="finding" id="F06" data-priority="P2" data-area="Codec" data-confidence="Reproduced"><div class="finding-meta"><a class="finding-id" href="#F06">F06</a><span class="badge p2">P2</span><span>Codec</span><span class="confidence confirmed">Reproduced</span></div><h3>VRH headers and decompression are not bounded before decoding</h3><p class="impact">A malformed or corrupted patch can supply non-finite terrain heights or request excessive allocations. Viewer-side dimension checks happen only after decoding, so they do not protect the decoder.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Change a valid patch&#39;s quantization step to NaN. A separate inspection-only case is a header claiming a very large side or a compressed stream expanding beyond the claimed residual length.</dd><dt>Cause</dt><dd>decode checks magic and header length but does not require a positive finite step, a legal width flag, or a supported side. It preallocates from side² and decompresses into an uncapped Vec, checking output length afterward. Prediction and base addition also use unchecked i32 arithmetic. The offline probe demonstrates accepted NaN output; large allocations and overflow attacks were not executed.</dd><dt>Recommended change</dt><dd>Validate header fields against supported dimensions and numeric ranges before allocation. Bound decompression output to the exact expected residual size, use checked arithmetic, and reject non-finite reconstructed heights. Pass expected dimensions into the decoder where possible.</dd><dt>Acceptance check</dt><dd>Small malformed fixtures for invalid side, step, flag, arithmetic overflow and oversized decompressed output all return errors within a fixed memory budget; normal tile and lidar round trips still pass.</dd><dt>Observed reproduction</dt><dd class="repro">The bundled probe encodes four heights, replaces bytes 6..10 with f32::NAN, and confirms decode returns Ok with four NaN heights.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../src/codec.rs">src/codec.rs</a> · lines 60–89</div><pre><code><span class="ln">60</span>/// Decode to (side, heights).
+<span class="ln">61</span>pub fn decode(bytes: &amp;[u8]) -&gt; Result&lt;(usize, Vec&lt;f32&gt;)&gt; {
+<span class="ln">62</span>    ensure!(bytes.len() &gt;= HEADER &amp;&amp; &amp;bytes[..4] == MAGIC, &quot;not a VRH1 height patch&quot;);
+<span class="ln">63</span>    let side = u16::from_le_bytes([bytes[4], bytes[5]]) as usize;
+<span class="ln">64</span>    let step = f32::from_le_bytes(bytes[6..10].try_into().unwrap());
+<span class="ln">65</span>    let base = i32::from_le_bytes(bytes[10..14].try_into().unwrap());
+<span class="ln">66</span>    let width = if bytes[14] == 1 { 4 } else { 2 };
+<span class="ln">67</span>    let n = side * side;
+<span class="ln">68</span>    let mut shuffled = Vec::with_capacity(n * width);
+<span class="ln">69</span>    brotli::BrotliDecompress(&amp;mut &amp;bytes[HEADER..], &amp;mut shuffled)?;
+<span class="ln">70</span>    if shuffled.len() != n * width {
+<span class="ln">71</span>        bail!(&quot;corrupt patch: {} residual bytes, expected {}&quot;, shuffled.len(), n * width);
+<span class="ln">72</span>    }
+<span class="ln">73</span>    let mut q = vec![0i32; n];
+<span class="ln">74</span>    for k in 0..n {
+<span class="ln">75</span>        let mut b = [0u8; 4];
+<span class="ln">76</span>        for (w, byte) in b[..width].iter_mut().enumerate() {
+<span class="ln">77</span>            *byte = shuffled[w * n + k];
+<span class="ln">78</span>        }
+<span class="ln">79</span>        let r = unzigzag(u32::from_le_bytes(b));
+<span class="ln">80</span>        let (i, j) = (k % side, k / side);
+<span class="ln">81</span>        let pred = match (i, j) {
+<span class="ln">82</span>            (0, 0) =&gt; 0,
+<span class="ln">83</span>            (_, 0) =&gt; q[k - 1],
+<span class="ln">84</span>            (0, _) =&gt; q[k - side],
+<span class="ln">85</span>            _ =&gt; q[k - 1] + q[k - side] - q[k - side - 1],
+<span class="ln">86</span>        };
+<span class="ln">87</span>        q[k] = r + pred;
+<span class="ln">88</span>    }
+<span class="ln">89</span>    Ok((side, q.iter().map(|&amp;v| (v + base) as f32 * step).collect()))</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · lines 555–563</div><pre><code><span class="ln">555</span>    for (t, status, bytes) in lidar {
+<span class="ln">556</span>        let state = match status {
+<span class="ln">557</span>            200 =&gt; match vr_fire::codec::decode(&amp;bytes) {
+<span class="ln">558</span>                Ok((side, h)) if side == lod::hires_nodes() + 2 =&gt; {
+<span class="ln">559</span>                    terrain.packed_bytes += bytes.len() as u64;
+<span class="ln">560</span>                    terrain.jobs.insert(0, Job { patch: Patch::Hires { t }, prio: -1.0, stage: Stage::Build, ll: Vec::new(), heights: h });
+<span class="ln">561</span>                    HiresState::Building
+<span class="ln">562</span>                }
+<span class="ln">563</span>                _ =&gt; HiresState::Unavailable(&quot;corrupt lidar patch&quot;.into()),</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · lines 588–601</div><pre><code><span class="ln">588</span>            Stage::Fetch { requested } =&gt; {
+<span class="ln">589</span>                let patch = terrain.jobs[i].patch;
+<span class="ln">590</span>                if let Some(result) = terrain.packed.remove(&amp;patch) {
+<span class="ln">591</span>                    let decoded = result.and_then(|b| vr_fire::codec::decode(&amp;b).ok()).filter(|(side, _)| *side == spec.n + 2);
+<span class="ln">592</span>                    let job = &amp;mut terrain.jobs[i];
+<span class="ln">593</span>                    match decoded {
+<span class="ln">594</span>                        Some((_, h)) =&gt; {
+<span class="ln">595</span>                            terrain.packed_hits += 1;
+<span class="ln">596</span>                            job.heights = h;
+<span class="ln">597</span>                            job.stage = Stage::Build;
+<span class="ln">598</span>                        }
+<span class="ln">599</span>                        None =&gt; {
+<span class="ln">600</span>                            terrain.packed_misses += 1;
+<span class="ln">601</span>                            job.stage = Stage::Plan; // no packed file here: use COG</code></pre></div></div></details></article>
+<article class="finding" id="F07" data-priority="P2" data-area="Pipeline" data-confidence="Reproduced"><div class="finding-meta"><a class="finding-id" href="#F07">F07</a><span class="badge p2">P2</span><span>Pipeline</span><span class="confidence confirmed">Reproduced</span></div><h3>Repacking leaves obsolete terrain files available for serving</h3><p class="impact">A tile that is now failed, empty, or no longer packable can keep serving its old successful .vrh. The viewer receives HTTP 200 and never takes the intended COG fallback for that obsolete output.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Pack to a directory, change an input tile&#39;s status to Failed, then pack again into the same directory. Losing a required neighbour can likewise change an emitted patch into a skipped patch.</dd><dt>Cause</dt><dd>run_pack enumerates only current OK tiles and increments skipped for incomplete patches. It never reconciles or removes previous output files. The optional deployment tar extraction overlays files on the server and likewise does not remove obsolete files. Individual packed files are also written directly, so an interrupted overwrite can leave a partial patch.</dd><dt>Recommended change</dt><dd>Build each pack into a new versioned directory with an output manifest, validate it, then atomically switch the served version. Reconcile obsolete paths using that manifest and publish individual files atomically.</dd><dt>Acceptance check</dt><dd>After a formerly valid tile fails, repacking and publishing yields no stale successful response at its old path. Simulate an interrupted build and ensure the previously published version remains intact.</dd><dt>Observed reproduction</dt><dd class="repro">The bundled probe packs a tile, marks it Failed, runs pack again, and confirms files=0 while packed/t0/1_1.vrh still exists.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../src/pack.rs">src/pack.rs</a> · lines 80–108</div><pre><code><span class="ln">80</span>fn write(out_dir: &amp;Path, rel: &amp;str, bytes: &amp;[u8]) -&gt; Result&lt;()&gt; {
+<span class="ln">81</span>    let path = out_dir.join(rel);
+<span class="ln">82</span>    std::fs::create_dir_all(path.parent().unwrap())?;
+<span class="ln">83</span>    std::fs::write(path, bytes)?;
+<span class="ln">84</span>    Ok(())
+<span class="ln">85</span>}
+<span class="ln">86</span>
+<span class="ln">87</span>pub fn run_pack(opts: &amp;PackOptions) -&gt; Result&lt;PackReport&gt; {
+<span class="ln">88</span>    let store = Store::new(&amp;opts.store_dir);
+<span class="ln">89</span>    let index = store.load_index()?;
+<span class="ln">90</span>    let nodes = Nodes { store: &amp;store, index: &amp;index, grid: index.grid, cache: Mutex::default() };
+<span class="ln">91</span>    let mut rows: BTreeMap&lt;i64, Vec&lt;TileId&gt;&gt; = BTreeMap::new();
+<span class="ln">92</span>    for t in index.tile_ids(TileStatus::Ok) {
+<span class="ln">93</span>        rows.entry(t.ty).or_default().push(t);
+<span class="ln">94</span>    }
+<span class="ln">95</span>    let total: usize = rows.values().map(Vec::len).sum();
+<span class="ln">96</span>    let report = Mutex::new(PackReport::default());
+<span class="ln">97</span>    let emit = |rel: String, patch: Option&lt;Vec&lt;f32&gt;&gt;, side: usize, step: f32| -&gt; Result&lt;()&gt; {
+<span class="ln">98</span>        let mut r = report.lock().unwrap();
+<span class="ln">99</span>        match patch {
+<span class="ln">100</span>            Some(h) =&gt; {
+<span class="ln">101</span>                drop(r);
+<span class="ln">102</span>                let bytes = encode(&amp;h, side, step);
+<span class="ln">103</span>                write(&amp;opts.out_dir, &amp;rel, &amp;bytes)?;
+<span class="ln">104</span>                let mut r = report.lock().unwrap();
+<span class="ln">105</span>                r.files += 1;
+<span class="ln">106</span>                r.bytes += bytes.len() as u64;
+<span class="ln">107</span>            }
+<span class="ln">108</span>            None =&gt; r.skipped += 1,</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../scripts/deploy_viewer.sh">scripts/deploy_viewer.sh</a> · lines 24–27</div><pre><code><span class="ln">24</span># Compressed terrain (vr_fire pack → packed/): upload with UPLOAD_TILES=1 (~2 GB, 147k files).
+<span class="ln">25</span>if [ &quot;${UPLOAD_TILES:-0}&quot; = 1 ]; then
+<span class="ln">26</span>  tar cf - -C packed . | ssh &quot;$HOST&quot; &#39;mkdir -p /var/www/chilos.dev/vr_fire/tiles &amp;&amp; tar xf - -C /var/www/chilos.dev/vr_fire/tiles&#39;
+<span class="ln">27</span>fi</code></pre></div></div></details></article>
+<article class="finding" id="F08" data-priority="P2" data-area="Pipeline" data-confidence="Reproduced"><div class="finding-meta"><a class="finding-id" href="#F08">F08</a><span class="badge p2">P2</span><span>Pipeline</span><span class="confidence confirmed">Reproduced</span></div><h3>Store validation accepts a raster with the wrong pixel spacing</h3><p class="impact">A mis-georeferenced or externally replaced store TIFF can be silently interpreted as a 10 m tile even though it spans a different extent. Baked and packed terrain will be stretched into the wrong footprint.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Provide a 376 × 376 EPSG:5070 TIFF whose first pixel centre matches the expected tile corner but whose pixels are 20 m apart.</dd><dt>Cause</dt><dd>read_tile checks dimensions, EPSG, and the location of the first sample. It does not check pixel_w or pixel_h against NODE_SPACING_M. Because the returned value is only a Vec&lt;f32&gt;, downstream code loses the original spacing and assumes the fixed 10 m grid. Normal files produced by Store::write_tile use the correct spacing; this is a missing validation boundary for damaged or substituted store files.</dd><dt>Recommended change</dt><dd>Validate both pixel dimensions as finite, positive and equal to NODE_SPACING_M within the intended tolerance; validate the complete expected extent before returning the samples.</dd><dt>Acceptance check</dt><dd>Matching 10 m point-registered tiles pass. The same shape and first-node position with 20 m, zero, negative or non-finite spacing is rejected with a path-specific error.</dd><dt>Observed reproduction</dt><dd class="repro">The bundled probe writes a 20 m point-registered TIFF with the expected first-node position and confirms Store::read_tile returns Some rather than an error.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../src/store.rs">src/store.rs</a> · lines 108–131</div><pre><code><span class="ln">108</span>    pub fn read_tile(&amp;self, grid: &amp;GridSpec, t: TileId) -&gt; Result&lt;Option&lt;Vec&lt;f32&gt;&gt;&gt; {
+<span class="ln">109</span>        let path = self.tile_path(t);
+<span class="ln">110</span>        if !path.exists() {
+<span class="ln">111</span>            return Ok(None);
+<span class="ln">112</span>        }
+<span class="ln">113</span>        let r = Raster::read_geotiff(&amp;path)?;
+<span class="ln">114</span>        let b = grid.tile_bounds(t);
+<span class="ln">115</span>        ensure!(
+<span class="ln">116</span>            r.width == NODES_PER_SIDE &amp;&amp; r.height == NODES_PER_SIDE,
+<span class="ln">117</span>            &quot;{}: expected {NODES_PER_SIDE}² nodes, got {}×{}&quot;,
+<span class="ln">118</span>            path.display(),
+<span class="ln">119</span>            r.width,
+<span class="ln">120</span>            r.height
+<span class="ln">121</span>        );
+<span class="ln">122</span>        ensure!(
+<span class="ln">123</span>            r.epsg == EPSG_CONUS_ALBERS
+<span class="ln">124</span>                &amp;&amp; (r.origin_x + r.pixel_w / 2.0 - b.x_min).abs() &lt; 1e-6
+<span class="ln">125</span>                &amp;&amp; (r.origin_y - r.pixel_h / 2.0 - b.y_max).abs() &lt; 1e-6,
+<span class="ln">126</span>            &quot;{}: georeference does not match tile {t}&quot;,
+<span class="ln">127</span>            path.display()
+<span class="ln">128</span>        );
+<span class="ln">129</span>        Ok(Some(r.data))
+<span class="ln">130</span>    }
+<span class="ln">131</span>}</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../src/grid.rs">src/grid.rs</a> · lines 11–13</div><pre><code><span class="ln">11</span>pub const TILE_SIZE_M: f64 = 3750.0;
+<span class="ln">12</span>pub const NODE_SPACING_M: f64 = 10.0;
+<span class="ln">13</span>pub const NODES_PER_SIDE: usize = 376;</code></pre></div></div></details></article>
+<article class="finding" id="F09" data-priority="P2" data-area="Lidar" data-confidence="Code-confirmed"><div class="finding-meta"><a class="finding-id" href="#F09">F09</a><span class="badge p2">P2</span><span>Lidar</span><span class="confidence ">Code-confirmed</span></div><h3>The daily OpenTopography cap resets on every process restart</h3><p class="impact">A deploy, crash, or service restart can permit another full day&#39;s configured allowance on the same UTC date. The configured cap therefore does not bound daily upstream usage.</p><details class="finding-details"><summary>Read analysis, remedy & source evidence</summary><div class="finding-body"><dl><dt>Trigger</dt><dd>Consume part of HIRES_DAILY_CAP, restart hires, and request previously uncached tiles on the same UTC day.</dd><dt>Cause</dt><dd>State starts with day=0 and calls_today=0 on each launch. Counters exist only in memory, while the service is configured to restart automatically and the deployment script restarts it. Cache files avoid repeated requests for successful tiles, but they do not restore the day&#39;s total attempts, including errors and uncached requests.</dd><dt>Recommended change</dt><dd>Persist the UTC day and reserved request count atomically before issuing an upstream request. Restore them at startup, count failures consistently, and define behavior for an unreadable quota record.</dd><dt>Acceptance check</dt><dd>With a cap of two and a local mock upstream, make one uncached call, restart the service, make a second call, and confirm a third returns 429 without reaching upstream. A new UTC day resets the cap.</dd></dl><div class="evidence"><div class="evidence-label"><a href="../../hires/src/main.rs">hires/src/main.rs</a> · lines 174–182</div><pre><code><span class="ln">174</span>fn main() -&gt; Result&lt;()&gt; {
+<span class="ln">175</span>    let key = std::env::var(&quot;OPENTOPOGRAPHY_API_KEY&quot;).context(&quot;OPENTOPOGRAPHY_API_KEY not set&quot;)?;
+<span class="ln">176</span>    let port = std::env::var(&quot;PORT&quot;).unwrap_or_else(|_| &quot;8797&quot;.into());
+<span class="ln">177</span>    let cache = PathBuf::from(std::env::var(&quot;HIRES_CACHE&quot;).unwrap_or_else(|_| &quot;hires-cache&quot;.into()));
+<span class="ln">178</span>    let cap: u32 = std::env::var(&quot;HIRES_DAILY_CAP&quot;).ok().and_then(|v| v.parse().ok()).unwrap_or(150);
+<span class="ln">179</span>    std::fs::create_dir_all(&amp;cache)?;
+<span class="ln">180</span>    let server = Server::http(format!(&quot;127.0.0.1:{port}&quot;)).map_err(|e| anyhow!(&quot;{e}&quot;))?;
+<span class="ln">181</span>    eprintln!(&quot;hires on 127.0.0.1:{port}, cache {}&quot;, cache.display());
+<span class="ln">182</span>    let state = Arc::new(Mutex::new(State { running: HashSet::new(), day: 0, calls_today: 0 }));</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../hires/src/main.rs">hires/src/main.rs</a> · lines 210–220</div><pre><code><span class="ln">210</span>        let day = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() / 86_400;
+<span class="ln">211</span>        if st.day != day {
+<span class="ln">212</span>            st.day = day;
+<span class="ln">213</span>            st.calls_today = 0;
+<span class="ln">214</span>        }
+<span class="ln">215</span>        if st.calls_today &gt;= cap {
+<span class="ln">216</span>            let _ = req.respond(text(429, &quot;daily OpenTopography request cap reached&quot;));
+<span class="ln">217</span>            continue;
+<span class="ln">218</span>        }
+<span class="ln">219</span>        st.calls_today += 1;
+<span class="ln">220</span>        st.running.insert(t);</code></pre></div><div class="evidence"><div class="evidence-label"><a href="../../scripts/deploy_viewer.sh">scripts/deploy_viewer.sh</a> · lines 21–23</div><pre><code><span class="ln">21</span>scp target/x86_64-unknown-linux-musl/release/relay &quot;$HOST:vr_fire/relay.new&quot;
+<span class="ln">22</span>scp target/x86_64-unknown-linux-musl/release/hires &quot;$HOST:vr_fire/hires.new&quot;
+<span class="ln">23</span>ssh &quot;$HOST&quot; &#39;mv vr_fire/relay.new vr_fire/relay &amp;&amp; mv vr_fire/hires.new vr_fire/hires &amp;&amp; sudo systemctl restart vr-fire-relay vr-fire-hires&#39;</code></pre></div></div></details></article></div><p class="empty" id="no-results" hidden>No findings match these filters. Try a different search or component.</p></section>
+<section class="section" id="data-model"><span class="eyebrow">Entity relationship diagrams</span><h2>Follow identity, ownership and provenance</h2><p class="section-intro">The diagrams describe the implemented model. K means a logical key in a filename, map or value, not an enforced database primary key. Open the text alternatives for a field dictionary and an explicit relationship list.</p><div class="legend"><span><strong>1</strong> exactly one</span><span><strong>0..1</strong> optional</span><span><strong>0..*</strong> zero or more</span><span><strong>Solid</strong> reference / containment</span><span><strong>Dashed</strong> derived / produced</span></div><section class="diagram-card" id="erd-terrain"><div class="diagram-heading"><div><span class="eyebrow">ERD 1 / 3</span><h3>Terrain persistence &amp; provenance</h3><p>JSON and GeoTIFF are the authoritative store; meshes and VRH patches are derived outputs.</p></div><div class="zoom-tools" aria-label="Diagram zoom"><button data-zoom="out" aria-label="Zoom out Terrain persistence &amp; provenance">−</button><button data-zoom="reset">Fit</button><button data-zoom="in" aria-label="Zoom in Terrain persistence &amp; provenance">+</button></div></div><div class="diagram-viewport" tabindex="0" role="region" aria-label="Terrain persistence &amp; provenance diagram; scroll when zoomed"><div class="diagram-inner"><svg role="img" aria-labelledby="terrain-title terrain-desc" width="1340pt" height="663pt"
+ viewBox="0.00 0.00 1340.00 663.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title id="terrain-title">Terrain persistence &amp; provenance</title><desc id="terrain-desc">JSON and GeoTIFF are the authoritative store; meshes and VRH patches are derived outputs. Cardinalities describe logical products of a successful run; they are not database constraints. Sources are stored as a string array, not a join table. A packed patch can read several tiles for its border ring or super-tile footprint. Old files may violate the intended current-output relationship (F07). Bake has four LODs; packed grid patches have five, plus a separate super level.</desc>
+<g id="terrain-graph0" class="graph" transform="scale(1 1) rotate(0) translate(25.2 638.2)">
+<title>terrain</title>
+
+<g id="terrain-edge1" class="edge">
+<title>index&#45;&gt;grid</title>
+<path fill="none" stroke="#527476" d="M209.21,-457.45C254.9,-473.36 307.92,-491.82 351.19,-506.89"/>
+<polygon fill="#527476" stroke="#527476" points="350.29,-508.98 357.17,-508.97 351.78,-504.68 350.29,-508.98"/>
+<text xml:space="preserve" text-anchor="middle" x="280.88" y="-495.81" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">embeds</text>
+<text xml:space="preserve" text-anchor="middle" x="337.71" y="-508.46" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="230.1" y="-452.2" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-edge2" class="edge">
+<title>index&#45;&gt;entry</title>
+<path fill="none" stroke="#527476" d="M209.21,-385.3C252.75,-370.14 302.96,-352.66 345.03,-338.01"/>
+<polygon fill="#527476" stroke="#527476" points="345.7,-340.19 351.09,-335.9 344.2,-335.89 345.7,-340.19"/>
+<text xml:space="preserve" text-anchor="middle" x="280.88" y="-374.01" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">maps tile keys</text>
+<text xml:space="preserve" text-anchor="middle" x="337.46" y="-346.92" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="224.27" y="-367.54" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-edge3" class="edge">
+<title>entry&#45;&gt;source</title>
+<path fill="none" stroke="#527476" d="M521.06,-352.51C572.43,-381 638.78,-417.8 693.72,-448.26"/>
+<polygon fill="#527476" stroke="#527476" points="692.59,-450.24 699.38,-451.4 694.8,-446.26 692.59,-450.24"/>
+<text xml:space="preserve" text-anchor="middle" x="610.88" y="-433.42" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">records source names</text>
+<text xml:space="preserve" text-anchor="middle" x="679.75" y="-447.54" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="542.01" y="-350.85" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="terrain-edge4" class="edge">
+<title>entry&#45;&gt;raster</title>
+<path fill="none" stroke="#527476" d="M521.06,-306.38C573.11,-306.38 640.55,-306.38 695.91,-306.38"/>
+<polygon fill="#527476" stroke="#527476" points="695.62,-308.65 702.12,-306.38 695.62,-304.1 695.62,-308.65"/>
+<text xml:space="preserve" text-anchor="middle" x="610.88" y="-309.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">locates height file</text>
+<text xml:space="preserve" text-anchor="middle" x="684.61" y="-312.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="540.09" y="-294.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-edge5" class="edge">
+<title>entry&#45;&gt;meta</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M521.06,-256.78C572.53,-226.09 639.05,-186.44 694.05,-153.64"/>
+<polygon fill="#527476" stroke="#527476" points="694.98,-155.74 699.4,-150.46 692.65,-151.83 694.98,-155.74"/>
+<text xml:space="preserve" text-anchor="middle" x="610.88" y="-233.94" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">bake derives</text>
+<text xml:space="preserve" text-anchor="middle" x="688.9" y="-163.92" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="532.87" y="-236.29" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-edge7" class="edge">
+<title>raster&#45;&gt;vrh</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M895.41,-306.38C956.78,-306.38 1036.48,-306.38 1098.5,-306.38"/>
+<polygon fill="#527476" stroke="#527476" points="1098.34,-308.65 1104.84,-306.38 1098.34,-304.1 1098.34,-308.65"/>
+<text xml:space="preserve" text-anchor="middle" x="1002.38" y="-309.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">pack samples + neighbours</text>
+<text xml:space="preserve" text-anchor="middle" x="1087.32" y="-312.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="914.44" y="-294.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="terrain-edge6" class="edge">
+<title>meta&#45;&gt;lod</title>
+<path fill="none" stroke="#527476" d="M898.45,-91.38C962.08,-91.38 1044.41,-91.38 1106.45,-91.38"/>
+<polygon fill="#527476" stroke="#527476" points="1106.29,-93.65 1112.79,-91.38 1106.29,-89.1 1106.29,-93.65"/>
+<text xml:space="preserve" text-anchor="middle" x="1002.38" y="-94.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">embeds</text>
+<text xml:space="preserve" text-anchor="middle" x="1095.27" y="-97.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">4</text>
+<text xml:space="preserve" text-anchor="middle" x="917.48" y="-79.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-node1" class="node">
+<title>grid</title>
+<polygon fill="#ffffff" stroke="none" points="358.5,-459.75 358.5,-613 515.25,-613 515.25,-459.75 358.5,-459.75"/>
+<polygon fill="#183b45" stroke="none" points="359.5,-578 359.5,-612 514.25,-612 514.25,-578 359.5,-578"/>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-590.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">GridSpec</text>
+<polygon fill="#e6efed" stroke="none" points="359.5,-549.25 359.5,-578 514.25,-578 514.25,-549.25 359.5,-549.25"/>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-560.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Embedded configuration</text>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-530.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">origin_x: f64</text>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-501.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">origin_y: f64</text>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-471.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">EPSG:5070; 3,750 m tiles</text>
+<polygon fill="none" stroke="#b4c9c6" points="358.5,-459.75 358.5,-613 515.25,-613 515.25,-459.75 358.5,-459.75"/>
+</g>
+
+<g id="terrain-node2" class="node">
+<title>index</title>
+<polygon fill="#ffffff" stroke="none" points="0,-359.5 0,-483.25 209.25,-483.25 209.25,-359.5 0,-359.5"/>
+<polygon fill="#183b45" stroke="none" points="1,-448.25 1,-482.25 208.25,-482.25 208.25,-448.25 1,-448.25"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-461" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">StoreIndex</text>
+<polygon fill="#e6efed" stroke="none" points="1,-419.5 1,-448.25 208.25,-448.25 208.25,-419.5 1,-419.5"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-430.75" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">store/index.json</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-401.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">grid: GridSpec</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-371.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">tiles: BTreeMap&lt;String, TileEntry&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="0,-359.5 0,-483.25 209.25,-483.25 209.25,-359.5 0,-359.5"/>
+</g>
+
+<g id="terrain-node3" class="node">
+<title>entry</title>
+<polygon fill="#ffffff" stroke="none" points="352.5,-185.5 352.5,-427.25 521.25,-427.25 521.25,-185.5 352.5,-185.5"/>
+<polygon fill="#183b45" stroke="none" points="353.5,-392.25 353.5,-426.25 520.25,-426.25 520.25,-392.25 353.5,-392.25"/>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-405" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">TileEntry</text>
+<polygon fill="#e6efed" stroke="none" points="353.5,-363.5 353.5,-392.25 520.25,-392.25 520.25,-363.5 353.5,-363.5"/>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-374.75" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Embedded JSON entry</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-345.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tx_ty (parent map key)</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-315.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">status: ok | empty | failed</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-286.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">error?: String</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-256.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">min/max_elevation_m?: f32</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-227.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">filled_samples: u32</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-197.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">sources: Vec&lt;String&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="352.5,-185.5 352.5,-427.25 521.25,-427.25 521.25,-185.5 352.5,-185.5"/>
+</g>
+
+<g id="terrain-node4" class="node">
+<title>source</title>
+<polygon fill="#ffffff" stroke="none" points="700.5,-429.75 700.5,-583 898.5,-583 898.5,-429.75 700.5,-429.75"/>
+<polygon fill="#183b45" stroke="none" points="701.5,-548 701.5,-582 897.5,-582 897.5,-548 701.5,-548"/>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-560.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">SourceCell</text>
+<polygon fill="#e6efed" stroke="none" points="701.5,-519.25 701.5,-548 897.5,-548 897.5,-519.25 701.5,-519.25"/>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-530.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">cache/USGS_13_nNNwWWW.tif</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-500.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: north + west</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-471.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">name: nNNwWWW</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-441.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">optional .part / .missing markers</text>
+<polygon fill="none" stroke="#b4c9c6" points="700.5,-429.75 700.5,-583 898.5,-583 898.5,-429.75 700.5,-429.75"/>
+</g>
+
+<g id="terrain-node5" class="node">
+<title>raster</title>
+<polygon fill="#ffffff" stroke="none" points="703.5,-215 703.5,-397.75 895.5,-397.75 895.5,-215 703.5,-215"/>
+<polygon fill="#183b45" stroke="none" points="704.5,-362.75 704.5,-396.75 894.5,-396.75 894.5,-362.75 704.5,-362.75"/>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-375.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Stored height raster</text>
+<polygon fill="#e6efed" stroke="none" points="704.5,-334 704.5,-362.75 894.5,-362.75 894.5,-334 704.5,-334"/>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-345.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">store/{tx}_{ty}.tif</text>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-315.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tx + ty (filename)</text>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-286.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">376 × 376 f32 samples</text>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-256.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">10 m; point&#45;registered</text>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-227.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">EPSG:5070 + georeference</text>
+<polygon fill="none" stroke="#b4c9c6" points="703.5,-215 703.5,-397.75 895.5,-397.75 895.5,-215 703.5,-215"/>
+</g>
+
+<g id="terrain-node6" class="node">
+<title>meta</title>
+<polygon fill="#ffffff" stroke="none" points="700.5,0 700.5,-182.75 898.5,-182.75 898.5,0 700.5,0"/>
+<polygon fill="#183b45" stroke="none" points="701.5,-147.75 701.5,-181.75 897.5,-181.75 897.5,-147.75 701.5,-147.75"/>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-160.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">TileMetadata</text>
+<polygon fill="#e6efed" stroke="none" points="701.5,-119 701.5,-147.75 897.5,-147.75 897.5,-119 701.5,-119"/>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-130.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">tiles/{tx}_{ty}.json</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-100.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tile.tx + tile.ty</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-71.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">bounds, grid_origin, crs</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-41.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">vertical_datum, sources, version</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-12.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">heights_file → tiles/{tile}.f32</text>
+<polygon fill="none" stroke="#b4c9c6" points="700.5,0 700.5,-182.75 898.5,-182.75 898.5,0 700.5,0"/>
+</g>
+
+<g id="terrain-node7" class="node">
+<title>lod</title>
+<polygon fill="#ffffff" stroke="none" points="1114.12,0 1114.12,-182.75 1281.38,-182.75 1281.38,0 1114.12,0"/>
+<polygon fill="#183b45" stroke="none" points="1115.12,-147.75 1115.12,-181.75 1280.38,-181.75 1280.38,-147.75 1115.12,-147.75"/>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-160.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">LodInfo</text>
+<polygon fill="#e6efed" stroke="none" points="1115.12,-119 1115.12,-147.75 1280.38,-147.75 1280.38,-119 1115.12,-119"/>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-130.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Embedded metadata array</text>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-100.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tile + lod</text>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-71.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">spacing_m, nodes_per_side</text>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-41.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">file → lod{0..3}/{tile}.glb</text>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-12.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">10 / 30 / 150 / 750 m</text>
+<polygon fill="none" stroke="#b4c9c6" points="1114.12,0 1114.12,-182.75 1281.38,-182.75 1281.38,0 1114.12,0"/>
+</g>
+
+<g id="terrain-node8" class="node">
+<title>vrh</title>
+<polygon fill="#ffffff" stroke="none" points="1106.25,-215 1106.25,-397.75 1289.25,-397.75 1289.25,-215 1106.25,-215"/>
+<polygon fill="#183b45" stroke="none" points="1107.25,-362.75 1107.25,-396.75 1288.25,-396.75 1288.25,-362.75 1107.25,-362.75"/>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-375.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">PackedPatch</text>
+<polygon fill="#e6efed" stroke="none" points="1107.25,-334 1107.25,-362.75 1288.25,-362.75 1288.25,-334 1107.25,-334"/>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-345.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">packed/t{0..4}/… or s/… .vrh</text>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-315.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: kind + level + grid address</text>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-286.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">VRH1, side, step, base, wide</text>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-256.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Brotli residuals + border ring</text>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-227.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">identity is in the path</text>
+<polygon fill="none" stroke="#b4c9c6" points="1106.25,-215 1106.25,-397.75 1289.25,-397.75 1289.25,-215 1106.25,-215"/>
+</g>
+</g>
+</svg>
+</div></div><p class="diagram-note">Cardinalities describe logical products of a successful run; they are not database constraints. Sources are stored as a string array, not a join table. A packed patch can read several tiles for its border ring or super-tile footprint. Old files may violate the intended current-output relationship (F07). Bake has four LODs; packed grid patches have five, plus a separate super level.</p><details class="dictionary"><summary>Entity dictionary and relationships (text alternative)</summary><div class="table-wrap"><table><thead><tr><th>Entity</th><th>Storage / identity / fields</th></tr></thead><tbody><tr><td><strong>GridSpec</strong></td><td>Embedded configuration<br>origin_x: f64<br>origin_y: f64<br>EPSG:5070; 3,750 m tiles</td></tr><tr><td><strong>StoreIndex</strong></td><td>store/index.json<br>grid: GridSpec<br>tiles: BTreeMap&lt;String, TileEntry&gt;</td></tr><tr><td><strong>TileEntry</strong></td><td>Embedded JSON entry<br>K: tx_ty (parent map key)<br>status: ok | empty | failed<br>error?: String<br>min/max_elevation_m?: f32<br>filled_samples: u32<br>sources: Vec&lt;String&gt;</td></tr><tr><td><strong>SourceCell</strong></td><td>cache/USGS_13_nNNwWWW.tif<br>K: north + west<br>name: nNNwWWW<br>optional .part / .missing markers</td></tr><tr><td><strong>Stored height raster</strong></td><td>store/{tx}_{ty}.tif<br>K: tx + ty (filename)<br>376 × 376 f32 samples<br>10 m; point-registered<br>EPSG:5070 + georeference</td></tr><tr><td><strong>TileMetadata</strong></td><td>tiles/{tx}_{ty}.json<br>K: tile.tx + tile.ty<br>bounds, grid_origin, crs<br>vertical_datum, sources, version<br>heights_file → tiles/{tile}.f32</td></tr><tr><td><strong>LodInfo</strong></td><td>Embedded metadata array<br>K: tile + lod<br>spacing_m, nodes_per_side<br>file → lod{0..3}/{tile}.glb<br>10 / 30 / 150 / 750 m</td></tr><tr><td><strong>PackedPatch</strong></td><td>packed/t{0..4}/… or s/… .vrh<br>K: kind + level + grid address<br>VRH1, side, step, base, wide<br>Brotli residuals + border ring<br>identity is in the path</td></tr></tbody></table></div><ul><li>StoreIndex [1] → GridSpec [1]: embeds</li><li>StoreIndex [1] → TileEntry [0..*]: maps tile keys</li><li>TileEntry [0..*] → SourceCell [0..*]: records source names</li><li>TileEntry [1] → Stored height raster [0..1]: locates height file</li><li>TileEntry [1] → TileMetadata [0..1]: bake derives (derived)</li><li>TileMetadata [1] → LodInfo [4]: embeds</li><li>Stored height raster [0..*] → PackedPatch [0..*]: pack samples + neighbours (derived)</li></ul></details><p class="source-list">Source: <a href="../../src/store.rs">src/store.rs</a> · <a href="../../src/grid.rs">src/grid.rs</a> · <a href="../../src/source.rs">src/source.rs</a> · <a href="../../src/export.rs">src/export.rs</a> · <a href="../../src/pack.rs">src/pack.rs</a> · <a href="../../src/lod.rs">src/lod.rs</a> · <a href="diagrams/terrain.svg">SVG</a> · <a href="diagrams/terrain.dot">DOT</a></p></section>
+<section class="diagram-card" id="erd-streaming"><div class="diagram-heading"><div><span class="eyebrow">ERD 2 / 3</span><h3>Viewer streaming &amp; rendering</h3><p>Runtime identities connect patch jobs, CPU heights, ECS entities and image mosaics.</p></div><div class="zoom-tools" aria-label="Diagram zoom"><button data-zoom="out" aria-label="Zoom out Viewer streaming &amp; rendering">−</button><button data-zoom="reset">Fit</button><button data-zoom="in" aria-label="Zoom in Viewer streaming &amp; rendering">+</button></div></div><div class="diagram-viewport" tabindex="0" role="region" aria-label="Viewer streaming &amp; rendering diagram; scroll when zoomed"><div class="diagram-inner"><svg role="img" aria-labelledby="streaming-title streaming-desc" width="1325pt" height="818pt"
+ viewBox="0.00 0.00 1325.00 818.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title id="streaming-title">Viewer streaming &amp; rendering</title><desc id="streaming-desc">Runtime identities connect patch jobs, CPU heights, ECS entities and image mosaics. All entities here are in memory. Patch is a value key (Super, Tile or Hires), not a database row. A job uses either packed bytes or the COG block dependency list; the optional many-to-many COG dependency is shown. Built and Job reference the same patch address at different lifecycle stages. Cardinalities describe a single viewer instance.</desc>
+<g id="streaming-graph0" class="graph" transform="scale(1 1) rotate(0) translate(25.2 793.2)">
+<title>streaming</title>
+
+<g id="streaming-edge1" class="edge">
+<title>terrain&#45;&gt;job</title>
+<path fill="none" stroke="#527476" d="M215.77,-361.24C261.31,-348.38 314.26,-333.43 359.47,-320.67"/>
+<polygon fill="#527476" stroke="#527476" points="359.86,-322.93 365.49,-318.97 358.62,-318.55 359.86,-322.93"/>
+<text xml:space="preserve" text-anchor="middle" x="289.5" y="-353.58" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">owns queue</text>
+<text xml:space="preserve" text-anchor="middle" x="351.04" y="-329.15" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="231.67" y="-344.4" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-edge2" class="edge">
+<title>terrain&#45;&gt;built</title>
+<path fill="none" stroke="#527476" d="M215.77,-421.51C270.12,-436.86 335.03,-455.18 384.73,-469.21"/>
+<polygon fill="#527476" stroke="#527476" points="383.94,-471.35 390.81,-470.93 385.17,-466.97 383.94,-471.35"/>
+<text xml:space="preserve" text-anchor="middle" x="289.5" y="-453.58" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">owns built map</text>
+<text xml:space="preserve" text-anchor="middle" x="371.54" y="-471.58" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="236.49" y="-415.02" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-edge3" class="edge">
+<title>job&#45;&gt;patch</title>
+<path fill="none" stroke="#527476" d="M561.39,-291.38C629.27,-291.38 718.37,-291.38 777.86,-291.38"/>
+<polygon fill="#527476" stroke="#527476" points="777.68,-293.65 784.18,-291.38 777.68,-289.1 777.68,-293.65"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-294.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">addresses</text>
+<text xml:space="preserve" text-anchor="middle" x="766.66" y="-297.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="580.42" y="-279.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+</g>
+
+<g id="streaming-edge8" class="edge">
+<title>job&#45;&gt;block</title>
+<path fill="none" stroke="#527476" d="M561.39,-240.39C614.34,-212.31 680.2,-177.38 734.85,-148.4"/>
+<polygon fill="#527476" stroke="#527476" points="735.78,-150.48 740.46,-145.42 733.65,-146.46 735.78,-150.48"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-218.42" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">Wait keys (COG path)</text>
+<text xml:space="preserve" text-anchor="middle" x="729.14" y="-158.35" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="574.05" y="-220.51" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="streaming-edge4" class="edge">
+<title>built&#45;&gt;patch</title>
+<path fill="none" stroke="#527476" d="M536.18,-453.76C606.11,-416.67 711.98,-360.53 779.12,-324.92"/>
+<polygon fill="#527476" stroke="#527476" points="779.89,-327.09 784.56,-322.03 777.75,-323.07 779.89,-327.09"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-418.42" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">keyed by</text>
+<text xml:space="preserve" text-anchor="middle" x="773.24" y="-334.96" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="548.84" y="-433.87" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+</g>
+
+<g id="streaming-edge5" class="edge">
+<title>built&#45;&gt;heights</title>
+<path fill="none" stroke="#527476" d="M536.18,-528.99C597.55,-561.54 686.6,-608.76 752.86,-643.9"/>
+<polygon fill="#527476" stroke="#527476" points="751.46,-645.73 758.27,-646.77 753.59,-641.71 751.46,-645.73"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-618.42" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">retains</text>
+<text xml:space="preserve" text-anchor="middle" x="738.63" y="-643.28" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="557.16" y="-526.94" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-edge6" class="edge">
+<title>built&#45;&gt;entity</title>
+<path fill="none" stroke="#527476" d="M536.18,-491.38C595.34,-491.38 680.2,-491.38 745.59,-491.38"/>
+<polygon fill="#527476" stroke="#527476" points="745.45,-493.65 751.95,-491.38 745.45,-489.1 745.45,-493.65"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-494.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">references</text>
+<text xml:space="preserve" text-anchor="middle" x="734.43" y="-497.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="555.22" y="-479.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-edge7" class="edge">
+<title>entity&#45;&gt;mosaic</title>
+<path fill="none" stroke="#527476" d="M933.32,-491.38C985.19,-491.38 1050.42,-491.38 1102.33,-491.38"/>
+<polygon fill="#527476" stroke="#527476" points="1102.21,-493.65 1108.71,-491.38 1102.21,-489.1 1102.21,-493.65"/>
+<text xml:space="preserve" text-anchor="middle" x="1027.5" y="-494.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">requests detail key</text>
+<text xml:space="preserve" text-anchor="middle" x="1091.19" y="-497.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="952.35" y="-479.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="streaming-edge9" class="edge">
+<title>cell&#45;&gt;block</title>
+<path fill="none" stroke="#527476" d="M565.32,-91.38C617.32,-91.38 680.92,-91.38 734.07,-91.38"/>
+<polygon fill="#527476" stroke="#527476" points="733.82,-93.65 740.32,-91.38 733.82,-89.1 733.82,-93.65"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-94.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">defines byte ranges</text>
+<text xml:space="preserve" text-anchor="middle" x="722.8" y="-97.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="584.35" y="-79.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-node1" class="node">
+<title>terrain</title>
+<polygon fill="#ffffff" stroke="none" points="0,-300 0,-482.75 216,-482.75 216,-300 0,-300"/>
+<polygon fill="#183b45" stroke="none" points="1,-447.75 1,-481.75 215,-481.75 215,-447.75 1,-447.75"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-460.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Terrain</text>
+<polygon fill="#e6efed" stroke="none" points="1,-419 1,-447.75 215,-447.75 215,-419 1,-419"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-430.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Bevy resource</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-400.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">grid, albers, source</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-371.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">jobs: Vec&lt;Job&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-341.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">built: HashMap&lt;Patch, Built&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-312.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">hires: HashMap&lt;TileId, HiresState&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="0,-300 0,-482.75 216,-482.75 216,-300 0,-300"/>
+</g>
+
+<g id="streaming-node2" class="node">
+<title>patch</title>
+<polygon fill="#ffffff" stroke="none" points="785.62,-214.75 785.62,-368 901.12,-368 901.12,-214.75 785.62,-214.75"/>
+<polygon fill="#183b45" stroke="none" points="786.62,-333 786.62,-367 900.12,-367 900.12,-333 786.62,-333"/>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-345.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Patch</text>
+<polygon fill="#e6efed" stroke="none" points="786.62,-304.25 786.62,-333 900.12,-333 900.12,-304.25 786.62,-304.25"/>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-315.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Value key</text>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-285.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: Super(sx, sy)</text>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-256.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">or Tile(tx, ty, lod)</text>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-226.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">or Hires(tx, ty)</text>
+<polygon fill="none" stroke="#b4c9c6" points="785.62,-214.75 785.62,-368 901.12,-368 901.12,-214.75 785.62,-214.75"/>
+</g>
+
+<g id="streaming-node3" class="node">
+<title>job</title>
+<polygon fill="#ffffff" stroke="none" points="366.75,-200 366.75,-382.75 561.75,-382.75 561.75,-200 366.75,-200"/>
+<polygon fill="#183b45" stroke="none" points="367.75,-347.75 367.75,-381.75 560.75,-381.75 560.75,-347.75 367.75,-347.75"/>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-360.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Job</text>
+<polygon fill="#e6efed" stroke="none" points="367.75,-319 367.75,-347.75 560.75,-347.75 560.75,-319 367.75,-319"/>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-330.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Pending work</text>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-300.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">patch: Patch; prio: f64</text>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-271.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">stage: Fetch | Plan | Wait | Build</text>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-241.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">ll: Vec&lt;(lon, lat)&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-212.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">heights: Vec&lt;f32&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="366.75,-200 366.75,-382.75 561.75,-382.75 561.75,-200 366.75,-200"/>
+</g>
+
+<g id="streaming-node4" class="node">
+<title>built</title>
+<polygon fill="#ffffff" stroke="none" points="392.25,-414.75 392.25,-568 536.25,-568 536.25,-414.75 392.25,-414.75"/>
+<polygon fill="#183b45" stroke="none" points="393.25,-533 393.25,-567 535.25,-567 535.25,-533 393.25,-533"/>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-545.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Built</text>
+<polygon fill="#e6efed" stroke="none" points="393.25,-504.25 393.25,-533 535.25,-533 535.25,-504.25 393.25,-504.25"/>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-515.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Terrain.built value</text>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-485.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: Patch (map key)</text>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-456.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">entity: Entity</text>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-426.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">heights: Arc&lt;Heights&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="392.25,-414.75 392.25,-568 536.25,-568 536.25,-414.75 392.25,-414.75"/>
+</g>
+
+<g id="streaming-node5" class="node">
+<title>heights</title>
+<polygon fill="#ffffff" stroke="none" points="759.38,-614.75 759.38,-768 927.38,-768 927.38,-614.75 759.38,-614.75"/>
+<polygon fill="#183b45" stroke="none" points="760.38,-733 760.38,-767 926.38,-767 926.38,-733 760.38,-733"/>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-745.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Heights</text>
+<polygon fill="#e6efed" stroke="none" points="760.38,-704.25 760.38,-733 926.38,-733 926.38,-704.25 760.38,-704.25"/>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-715.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">CPU physics / picking</text>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-685.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">x_min, y_max, spacing: f64</text>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-656.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">n: usize</text>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-626.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">data: Vec&lt;f32&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="759.38,-614.75 759.38,-768 927.38,-768 927.38,-614.75 759.38,-614.75"/>
+</g>
+
+<g id="streaming-node6" class="node">
+<title>entity</title>
+<polygon fill="#ffffff" stroke="none" points="753.38,-400 753.38,-582.75 933.38,-582.75 933.38,-400 753.38,-400"/>
+<polygon fill="#183b45" stroke="none" points="754.38,-547.75 754.38,-581.75 932.38,-581.75 932.38,-547.75 754.38,-547.75"/>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-560.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Terrain ECS entity</text>
+<polygon fill="#e6efed" stroke="none" points="754.38,-519 754.38,-547.75 932.38,-547.75 932.38,-519 754.38,-519"/>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-530.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Rendered patch</text>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-500.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: Entity</text>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-471.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Mesh3d, material handle</text>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-441.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Draped(Option&lt;MosaicKey&gt;)</text>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-412.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Anchor, Transform, Visibility</text>
+<polygon fill="none" stroke="#b4c9c6" points="753.38,-400 753.38,-582.75 933.38,-582.75 933.38,-400 753.38,-400"/>
+</g>
+
+<g id="streaming-node7" class="node">
+<title>mosaic</title>
+<polygon fill="#ffffff" stroke="none" points="1110,-414.75 1110,-568 1275,-568 1275,-414.75 1110,-414.75"/>
+<polygon fill="#183b45" stroke="none" points="1111,-533 1111,-567 1274,-567 1274,-533 1111,-533"/>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-545.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Mosaic</text>
+<polygon fill="#e6efed" stroke="none" points="1111,-504.25 1111,-533 1274,-533 1274,-504.25 1111,-504.25"/>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-515.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Imagery.mosaics entry</text>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-485.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: z, x0, y0, x1, y1</text>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-456.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Waiting | Building | Ready</text>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-426.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Ready → material → image</text>
+<polygon fill="none" stroke="#b4c9c6" points="1110,-414.75 1110,-568 1275,-568 1275,-414.75 1110,-414.75"/>
+</g>
+
+<g id="streaming-node8" class="node">
+<title>block</title>
+<polygon fill="#ffffff" stroke="none" points="741.75,0 741.75,-182.75 945,-182.75 945,0 741.75,0"/>
+<polygon fill="#183b45" stroke="none" points="742.75,-147.75 742.75,-181.75 944,-181.75 944,-147.75 742.75,-147.75"/>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-160.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">COG block</text>
+<polygon fill="#e6efed" stroke="none" points="742.75,-119 742.75,-147.75 944,-147.75 944,-119 742.75,-119"/>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-130.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Cog.tiles entry</text>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-100.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: cell + level + tx + ty</text>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-71.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Queued | Pending | Ready | Failed</text>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-41.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Ready: Arc&lt;TileData&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-12.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">w, h, data: Vec&lt;f32&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="741.75,0 741.75,-182.75 945,-182.75 945,0 741.75,0"/>
+</g>
+
+<g id="streaming-node9" class="node">
+<title>cell</title>
+<polygon fill="#ffffff" stroke="none" points="363,-14.75 363,-168 565.5,-168 565.5,-14.75 363,-14.75"/>
+<polygon fill="#183b45" stroke="none" points="364,-133 364,-167 564.5,-167 564.5,-133 364,-133"/>
+<text xml:space="preserve" text-anchor="start" x="372" y="-145.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">CellMeta / Level</text>
+<polygon fill="#e6efed" stroke="none" points="364,-104.25 364,-133 564.5,-133 564.5,-104.25 364,-104.25"/>
+<text xml:space="preserve" text-anchor="start" x="372" y="-115.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Cog.cells ready metadata</text>
+<text xml:space="preserve" text-anchor="start" x="372" y="-85.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: north + west</text>
+<text xml:space="preserve" text-anchor="start" x="372" y="-56.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">origin_lon, origin_lat, header</text>
+<text xml:space="preserve" text-anchor="start" x="372" y="-26.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">levels: dimensions + byte ranges</text>
+<polygon fill="none" stroke="#b4c9c6" points="363,-14.75 363,-168 565.5,-168 565.5,-14.75 363,-14.75"/>
+</g>
+</g>
+</svg>
+</div></div><p class="diagram-note">All entities here are in memory. Patch is a value key (Super, Tile or Hires), not a database row. A job uses either packed bytes or the COG block dependency list; the optional many-to-many COG dependency is shown. Built and Job reference the same patch address at different lifecycle stages. Cardinalities describe a single viewer instance.</p><details class="dictionary"><summary>Entity dictionary and relationships (text alternative)</summary><div class="table-wrap"><table><thead><tr><th>Entity</th><th>Storage / identity / fields</th></tr></thead><tbody><tr><td><strong>Terrain</strong></td><td>Bevy resource<br>grid, albers, source<br>jobs: Vec&lt;Job&gt;<br>built: HashMap&lt;Patch, Built&gt;<br>hires: HashMap&lt;TileId, HiresState&gt;</td></tr><tr><td><strong>Patch</strong></td><td>Value key<br>K: Super(sx, sy)<br>or Tile(tx, ty, lod)<br>or Hires(tx, ty)</td></tr><tr><td><strong>Job</strong></td><td>Pending work<br>patch: Patch; prio: f64<br>stage: Fetch | Plan | Wait | Build<br>ll: Vec&lt;(lon, lat)&gt;<br>heights: Vec&lt;f32&gt;</td></tr><tr><td><strong>Built</strong></td><td>Terrain.built value<br>K: Patch (map key)<br>entity: Entity<br>heights: Arc&lt;Heights&gt;</td></tr><tr><td><strong>Heights</strong></td><td>CPU physics / picking<br>x_min, y_max, spacing: f64<br>n: usize<br>data: Vec&lt;f32&gt;</td></tr><tr><td><strong>Terrain ECS entity</strong></td><td>Rendered patch<br>K: Entity<br>Mesh3d, material handle<br>Draped(Option&lt;MosaicKey&gt;)<br>Anchor, Transform, Visibility</td></tr><tr><td><strong>Mosaic</strong></td><td>Imagery.mosaics entry<br>K: z, x0, y0, x1, y1<br>Waiting | Building | Ready<br>Ready → material → image</td></tr><tr><td><strong>COG block</strong></td><td>Cog.tiles entry<br>K: cell + level + tx + ty<br>Queued | Pending | Ready | Failed<br>Ready: Arc&lt;TileData&gt;<br>w, h, data: Vec&lt;f32&gt;</td></tr><tr><td><strong>CellMeta / Level</strong></td><td>Cog.cells ready metadata<br>K: north + west<br>origin_lon, origin_lat, header<br>levels: dimensions + byte ranges</td></tr></tbody></table></div><ul><li>Terrain [1] → Job [0..*]: owns queue</li><li>Terrain [1] → Built [0..*]: owns built map</li><li>Job [0..1] → Patch [1]: addresses</li><li>Built [0..1] → Patch [1]: keyed by</li><li>Built [1] → Heights [1]: retains</li><li>Built [1] → Terrain ECS entity [1]: references</li><li>Terrain ECS entity [0..*] → Mosaic [0..1]: requests detail key</li><li>Job [0..*] → COG block [0..*]: Wait keys (COG path)</li><li>CellMeta / Level [1] → COG block [0..*]: defines byte ranges</li></ul></details><p class="source-list">Source: <a href="../../viewer/src/terrain.rs">viewer/src/terrain.rs</a> · <a href="../../viewer/src/cog.rs">viewer/src/cog.rs</a> · <a href="../../viewer/src/imagery.rs">viewer/src/imagery.rs</a> · <a href="diagrams/streaming.svg">SVG</a> · <a href="diagrams/streaming.dot">DOT</a></p></section>
+<section class="diagram-card" id="erd-services"><div class="diagram-heading"><div><span class="eyebrow">ERD 3 / 3</span><h3>Multiplayer sessions &amp; lidar cache</h3><p>Two independent services: transient player state with an event log, and cached lidar products.</p></div><div class="zoom-tools" aria-label="Diagram zoom"><button data-zoom="out" aria-label="Zoom out Multiplayer sessions &amp; lidar cache">−</button><button data-zoom="reset">Fit</button><button data-zoom="in" aria-label="Zoom in Multiplayer sessions &amp; lidar cache">+</button></div></div><div class="diagram-viewport" tabindex="0" role="region" aria-label="Multiplayer sessions &amp; lidar cache diagram; scroll when zoomed"><div class="diagram-inner"><svg role="img" aria-labelledby="services-title services-desc" width="1070pt" height="863pt"
+ viewBox="0.00 0.00 1070.00 863.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title id="services-title">Multiplayer sessions &amp; lidar cache</title><desc id="services-desc">Two independent services: transient player state with an event log, and cached lidar products. Player IDs are process-local and restart at 1. JSONL event IDs are historical references, not globally unique foreign keys. Event (the in-memory recent view) drops the id/name fields stored in JSONL and retains only the last 60 entries. The lidar quota has no persistent entity today (F09). The two services have no code-level data relationship.</desc>
+<g id="services-graph0" class="graph" transform="scale(1 1) rotate(0) translate(25.2 837.95)">
+<title>services</title>
+
+<g id="services-edge1" class="edge">
+<title>peer&#45;&gt;player</title>
+<path fill="none" stroke="#527476" d="M199.25,-358.01C257.44,-388.52 331.49,-427.33 392.8,-459.48"/>
+<polygon fill="#527476" stroke="#527476" points="391.67,-461.46 398.49,-462.46 393.79,-457.43 391.67,-461.46"/>
+<text xml:space="preserve" text-anchor="middle" x="299.62" y="-442.7" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">tracks while connected</text>
+<text xml:space="preserve" text-anchor="middle" x="378.85" y="-459.06" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="220.22" y="-355.86" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge2" class="edge">
+<title>peer&#45;&gt;event</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M199.25,-306.38C267.34,-306.38 357.15,-306.38 422.85,-306.38"/>
+<polygon fill="#527476" stroke="#527476" points="422.73,-308.65 429.23,-306.38 422.73,-304.1 422.73,-308.65"/>
+<text xml:space="preserve" text-anchor="middle" x="299.62" y="-309.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">records historical events</text>
+<text xml:space="preserve" text-anchor="middle" x="411.71" y="-312.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="218.28" y="-294.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge4" class="edge">
+<title>peer&#45;&gt;remote</title>
+<path fill="none" stroke="#527476" d="M199.25,-254.74C262.36,-221.66 344.12,-178.79 408.06,-145.27"/>
+<polygon fill="#527476" stroke="#527476" points="408.93,-147.38 413.64,-142.35 406.82,-143.35 408.93,-147.38"/>
+<text xml:space="preserve" text-anchor="middle" x="299.62" y="-233.94" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">pose seen by other clients</text>
+<text xml:space="preserve" text-anchor="middle" x="402.24" y="-155.22" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="211.98" y="-234.92" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge3" class="edge">
+<title>event&#45;&gt;recent</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M593.24,-306.38C661.57,-306.38 759.81,-306.38 832.04,-306.38"/>
+<polygon fill="#527476" stroke="#527476" points="831.82,-308.65 838.32,-306.38 831.82,-304.1 831.82,-308.65"/>
+<text xml:space="preserve" text-anchor="middle" x="730.12" y="-309.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">projects / loads tail</text>
+<text xml:space="preserve" text-anchor="middle" x="820.8" y="-312.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="612.27" y="-294.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge5" class="edge">
+<title>quota&#45;&gt;lidarjob</title>
+<path fill="none" stroke="#527476" d="M179.34,-721.38C241.15,-721.38 328.12,-721.38 397.47,-721.38"/>
+<polygon fill="#527476" stroke="#527476" points="397.4,-723.65 403.9,-721.38 397.4,-719.1 397.4,-723.65"/>
+<text xml:space="preserve" text-anchor="middle" x="299.62" y="-724.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">admits running tile</text>
+<text xml:space="preserve" text-anchor="middle" x="386.38" y="-727.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="198.37" y="-709.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge6" class="edge">
+<title>lidarjob&#45;&gt;cache</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M618.21,-721.38C682.94,-721.38 765.31,-721.38 828.72,-721.38"/>
+<polygon fill="#527476" stroke="#527476" points="828.34,-723.65 834.84,-721.38 828.34,-719.1 828.34,-723.65"/>
+<text xml:space="preserve" text-anchor="middle" x="730.12" y="-724.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">produces outcome over time</text>
+<text xml:space="preserve" text-anchor="middle" x="817.32" y="-727.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="637.24" y="-709.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="services-node1" class="node">
+<title>peer</title>
+<polygon fill="#ffffff" stroke="none" points="0,-229.75 0,-383 199.5,-383 199.5,-229.75 0,-229.75"/>
+<polygon fill="#183b45" stroke="none" points="1,-348 1,-382 198.5,-382 198.5,-348 1,-348"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-360.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Relay connection</text>
+<polygon fill="#e6efed" stroke="none" points="1,-319.25 1,-348 198.5,-348 198.5,-319.25 1,-319.25"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-330.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Process&#45;local state</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-300.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: id: u64 (per process)</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-271.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">TCP / WebSocket</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-241.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Sender&lt;String&gt; outbound queue</text>
+<polygon fill="none" stroke="#b4c9c6" points="0,-229.75 0,-383 199.5,-383 199.5,-229.75 0,-229.75"/>
+</g>
+
+<g id="services-node2" class="node">
+<title>player</title>
+<polygon fill="#ffffff" stroke="none" points="399.75,-430 399.75,-612.75 624,-612.75 624,-430 399.75,-430"/>
+<polygon fill="#183b45" stroke="none" points="400.75,-577.75 400.75,-611.75 623,-611.75 623,-577.75 400.75,-577.75"/>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-590.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Player</text>
+<polygon fill="#e6efed" stroke="none" points="400.75,-549 400.75,-577.75 623,-577.75 623,-549 400.75,-549"/>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-560.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Stats.players[id]</text>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-530.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: id (map key)</text>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-501.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">name, joined, last_seen</text>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-471.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">last_xy, rounded lat/lon</text>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-442.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">speed_kmh, boosting, updates, drops</text>
+<polygon fill="none" stroke="#b4c9c6" points="399.75,-430 399.75,-612.75 624,-612.75 624,-430 399.75,-430"/>
+</g>
+
+<g id="services-node3" class="node">
+<title>event</title>
+<polygon fill="#ffffff" stroke="none" points="430.5,-215 430.5,-397.75 593.25,-397.75 593.25,-215 430.5,-215"/>
+<polygon fill="#183b45" stroke="none" points="431.5,-362.75 431.5,-396.75 592.25,-396.75 592.25,-362.75 431.5,-362.75"/>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-375.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">JSONL event</text>
+<polygon fill="#e6efed" stroke="none" points="431.5,-334 431.5,-362.75 592.25,-362.75 592.25,-334 431.5,-334"/>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-345.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">RELAY_LOG / players.jsonl</text>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-315.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">no unique event key</text>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-286.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">t, kind, id, name, text</text>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-256.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">lat?, lon?, online</text>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-227.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">join | drop | flipped | leave</text>
+<polygon fill="none" stroke="#b4c9c6" points="430.5,-215 430.5,-397.75 593.25,-397.75 593.25,-215 430.5,-215"/>
+</g>
+
+<g id="services-node4" class="node">
+<title>recent</title>
+<polygon fill="#ffffff" stroke="none" points="839.62,-229.75 839.62,-383 1016.62,-383 1016.62,-229.75 839.62,-229.75"/>
+<polygon fill="#183b45" stroke="none" points="840.62,-348 840.62,-382 1015.62,-382 1015.62,-348 840.62,-348"/>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-360.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Event</text>
+<polygon fill="#e6efed" stroke="none" points="840.62,-319.25 840.62,-348 1015.62,-348 1015.62,-319.25 840.62,-319.25"/>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-330.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Stats.events (max 60)</text>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-300.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">at, kind, text</text>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-271.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">lat?, lon?</text>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-241.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">no retained id or name fields</text>
+<polygon fill="none" stroke="#b4c9c6" points="839.62,-229.75 839.62,-383 1016.62,-383 1016.62,-229.75 839.62,-229.75"/>
+</g>
+
+<g id="services-node5" class="node">
+<title>remote</title>
+<polygon fill="#ffffff" stroke="none" points="414.75,0 414.75,-182.75 609,-182.75 609,0 414.75,0"/>
+<polygon fill="#183b45" stroke="none" points="415.75,-147.75 415.75,-181.75 608,-181.75 608,-147.75 415.75,-147.75"/>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-160.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Remote</text>
+<polygon fill="#e6efed" stroke="none" points="415.75,-119 415.75,-147.75 608,-147.75 608,-119 415.75,-119"/>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-130.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Other clients&#39; Remotes.trucks[id]</text>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-100.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: id (per client map)</text>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-71.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">name, albers, h, target_rot, vel</text>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-41.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">entity, beacon, label</text>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-12.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">seen, rate, jitter, smoothing_err</text>
+<polygon fill="none" stroke="#b4c9c6" points="414.75,0 414.75,-182.75 609,-182.75 609,0 414.75,0"/>
+</g>
+
+<g id="services-node6" class="node">
+<title>quota</title>
+<polygon fill="#ffffff" stroke="none" points="19.88,-644.75 19.88,-798 179.62,-798 179.62,-644.75 19.88,-644.75"/>
+<polygon fill="#183b45" stroke="none" points="20.88,-763 20.88,-797 178.62,-797 178.62,-763 20.88,-763"/>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-775.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Lidar State</text>
+<polygon fill="#e6efed" stroke="none" points="20.88,-734.25 20.88,-763 178.62,-763 178.62,-734.25 20.88,-734.25"/>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-745.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Service singleton / memory</text>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-715.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">running: HashSet&lt;TileId&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-686.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">day: u64</text>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-656.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">calls_today: u32</text>
+<polygon fill="none" stroke="#b4c9c6" points="19.88,-644.75 19.88,-798 179.62,-798 179.62,-644.75 19.88,-644.75"/>
+</g>
+
+<g id="services-node7" class="node">
+<title>lidarjob</title>
+<polygon fill="#ffffff" stroke="none" points="405.38,-644.75 405.38,-798 618.38,-798 618.38,-644.75 405.38,-644.75"/>
+<polygon fill="#183b45" stroke="none" points="406.38,-763 406.38,-797 617.38,-797 617.38,-763 406.38,-763"/>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-775.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Lidar build request</text>
+<polygon fill="#e6efed" stroke="none" points="406.38,-734.25 406.38,-763 617.38,-763 617.38,-734.25 406.38,-734.25"/>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-745.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Worker / runtime</text>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-715.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tile.tx + tile.ty</text>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-686.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">at most one running job</text>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-656.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">request → resample → fill → encode</text>
+<polygon fill="none" stroke="#b4c9c6" points="405.38,-644.75 405.38,-798 618.38,-798 618.38,-644.75 405.38,-644.75"/>
+</g>
+
+<g id="services-node8" class="node">
+<title>cache</title>
+<polygon fill="#ffffff" stroke="none" points="836.25,-630 836.25,-812.75 1020,-812.75 1020,-630 836.25,-630"/>
+<polygon fill="#183b45" stroke="none" points="837.25,-777.75 837.25,-811.75 1019,-811.75 1019,-777.75 837.25,-777.75"/>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-790.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Lidar cache entry</text>
+<polygon fill="#e6efed" stroke="none" points="837.25,-749 837.25,-777.75 1019,-777.75 1019,-749 837.25,-749"/>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-760.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">HIRES_CACHE / files</text>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-730.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tx_ty (filename)</text>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-701.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">{tile}.vrh: successful patch</text>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-671.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">{tile}.none: no&#45;lidar message</text>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-642.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">success checked before .none</text>
+<polygon fill="none" stroke="#b4c9c6" points="836.25,-630 836.25,-812.75 1020,-812.75 1020,-630 836.25,-630"/>
+</g>
+</g>
+</svg>
+</div></div><p class="diagram-note">Player IDs are process-local and restart at 1. JSONL event IDs are historical references, not globally unique foreign keys. Event (the in-memory recent view) drops the id/name fields stored in JSONL and retains only the last 60 entries. The lidar quota has no persistent entity today (F09). The two services have no code-level data relationship.</p><details class="dictionary"><summary>Entity dictionary and relationships (text alternative)</summary><div class="table-wrap"><table><thead><tr><th>Entity</th><th>Storage / identity / fields</th></tr></thead><tbody><tr><td><strong>Relay connection</strong></td><td>Process-local state<br>K: id: u64 (per process)<br>TCP / WebSocket<br>Sender&lt;String&gt; outbound queue</td></tr><tr><td><strong>Player</strong></td><td>Stats.players[id]<br>K: id (map key)<br>name, joined, last_seen<br>last_xy, rounded lat/lon<br>speed_kmh, boosting, updates, drops</td></tr><tr><td><strong>JSONL event</strong></td><td>RELAY_LOG / players.jsonl<br>no unique event key<br>t, kind, id, name, text<br>lat?, lon?, online<br>join | drop | flipped | leave</td></tr><tr><td><strong>Event</strong></td><td>Stats.events (max 60)<br>at, kind, text<br>lat?, lon?<br>no retained id or name fields</td></tr><tr><td><strong>Remote</strong></td><td>Other clients&#39; Remotes.trucks[id]<br>K: id (per client map)<br>name, albers, h, target_rot, vel<br>entity, beacon, label<br>seen, rate, jitter, smoothing_err</td></tr><tr><td><strong>Lidar State</strong></td><td>Service singleton / memory<br>running: HashSet&lt;TileId&gt;<br>day: u64<br>calls_today: u32</td></tr><tr><td><strong>Lidar build request</strong></td><td>Worker / runtime<br>K: tile.tx + tile.ty<br>at most one running job<br>request → resample → fill → encode</td></tr><tr><td><strong>Lidar cache entry</strong></td><td>HIRES_CACHE / files<br>K: tx_ty (filename)<br>{tile}.vrh: successful patch<br>{tile}.none: no-lidar message<br>success checked before .none</td></tr></tbody></table></div><ul><li>Relay connection [1] → Player [1]: tracks while connected</li><li>Relay connection [1] → JSONL event [0..*]: records historical events (derived)</li><li>JSONL event [1] → Event [0..1]: projects / loads tail (derived)</li><li>Relay connection [1] → Remote [0..*]: pose seen by other clients</li><li>Lidar State [1] → Lidar build request [0..1]: admits running tile</li><li>Lidar build request [0..*] → Lidar cache entry [0..1]: produces outcome over time (derived)</li></ul></details><p class="source-list">Source: <a href="../../relay/src/main.rs">relay/src/main.rs</a> · <a href="../../relay/src/stats.rs">relay/src/stats.rs</a> · <a href="../../viewer/src/net.rs">viewer/src/net.rs</a> · <a href="../../hires/src/main.rs">hires/src/main.rs</a> · <a href="diagrams/services.svg">SVG</a> · <a href="diagrams/services.dot">DOT</a></p></section></section>
+<section class="section" id="validation"><span class="eyebrow">Evidence & limits</span><h2>What was actually checked</h2><p class="section-intro">94 unique existing tests passed across the library, integration suites, viewer and services. Four additional probes reproduced defects; they are not counted as passing regression coverage.</p><div class="validation-table table-wrap"><table><thead><tr><th>Check / result</th><th>Command & interpretation</th></tr></thead><tbody><tr><td><strong>Core library</strong><br><span class="pass">66 unique tests passed</span></td><td><code>cargo test --offline -p vr_fire -p relay -p hires</code><p>Initial sandbox run: 60 passed, including the cached LZW decoder test; six local HTTP fixture tests could not bind localhost (EPERM). These were environmental failures.</p></td></tr><tr><td><strong>Pipeline + service rerun</strong><br><span class="pass">65 core + 8 integration + 3 lidar + 4 relay tests passed</span></td><td><code>cargo test --offline -p vr_fire -p relay -p hires -- --skip dem::lenient_tests::decodes_blocks_missing_the_lzw_end_code</code><p>Ran with permission to bind local test sockets. The expensive cached-LZW test was skipped only because it had already passed. One explicitly ignored external download test remained ignored.</p></td></tr><tr><td><strong>Viewer</strong><br><span class="pass">13 tests passed</span></td><td><code>cargo test --offline -p viewer</code><p>Includes the present cached sparse-COG fixture and existing diagnostics changes. This is a native unit-test run, not renderer or browser acceptance.</p></td></tr><tr><td><strong>Offline defect probes</strong><br><span class="pass">4 of 4 reproduced</span></td><td><code>cargo run --offline --manifest-path docs/review/probes/Cargo.toml --target-dir target/review-probes</code><p>Confirms F03, F06, F07 and F08 on synthetic, temporary data. Assertions describe existing defects, not desired behavior; they should fail after repairs.</p></td></tr><tr><td><strong>Compression benchmark crate</strong><br><span class="pass">Build check passed</span></td><td><code>cargo check --offline -p compress-lab</code><p>Checks the remaining workspace crate. No compression benchmark was rerun.</p></td></tr><tr><td><strong>HTML report</strong><br><span class="pass">Headless Chrome checks passed</span></td><td><code>CHROME=/home/david/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome node docs/review/verify.mjs</code><p>Opened via file URL with networking disabled. Verified all nine findings, three SVGs, local links, search, filters, empty state, anchors, expand/collapse, diagram zoom and print-state restoration. Desktop (1440 px) and mobile (390 px) screenshots were inspected. No page overflow, JavaScript exceptions or external requests. This validates the report, not the Bevy application.</p></td></tr></tbody></table></div><p class="small-note"><strong>Toolchain:</strong> rustc 1.100.0-nightly (a36d05efa 2026-09-09); cargo 1.100.0-nightly (3c0b53475 2026-09-04)</p><div class="two-cols"><div class="text-card"><h3>What is working well</h3><ul><li>The shared grid and LOD modules keep tile geometry consistent across pipeline, viewer and lidar outputs. Bounds use f64 and the viewer renders relative to a movable origin.</li><li>Store tiles and the index use temporary files followed by rename. Ingest distinguishes failed sources from empty tiles and supports resumable downloads and corrupt-cache recovery.</li><li>Tests cover projection round trips, adjacent edges and normals, GLB validity, codec error bounds, triangle-consistent height lookup, imagery UVs and privacy-safe stats rendering.</li><li>The relay overwrites sender IDs rather than trusting client IDs, and its HTML stats view escapes player-controlled text. The lidar API key is supplied to the server through an environment file.</li></ul></div><div class="text-card"><h3>Outstanding verification</h3><ul><li>No live USGS, OpenTopography, production relay or server configuration was exercised. External service availability and the currently deployed build remain unverified.</li><li>Viewer unit tests do not start the renderer, compile the final shader pipeline, validate WebGL2/WebGPU behavior, measure FPS, or prove VR/headset support. The existing viewer documentation explicitly leaves browser WebGL2 acceptance outstanding.</li><li>No dependency vulnerability audit, sustained multiplayer load test, browser-memory soak test, or paid lidar request was run.</li><li>Two existing tests return early when their cached GeoTIFF fixtures are absent. Both fixtures were present here; the cached LZW and sparse COG paths ran. The explicitly ignored real_3dep download test was not run.</li><li>The 4 ms terrain budget is checked between work units. Mesh generation for a complete lidar patch and some decoding operations are synchronous; their worst-frame cost was not measured.</li><li>The application is a terrain/viewer prototype. This review did not identify an implemented fire-spread model or a relational database schema; the ERDs model the actual file and runtime structures.</li></ul></div></div><details class="small-note"><summary>Compiler warnings and snapshot provenance</summary><ul><li>The viewer emits recursion_depth_exceeding_limit from AsBindGroup and reports it as future-incompatible on this installed nightly compiler.</li><li>Imagery.since_near is unused. Cargo also warns that the vr_fire binary name is not kebab-case. These warnings are recorded separately from behavioral findings.</li></ul><p>The review started at dddce95 with existing viewer edits. Those edits were committed concurrently as c15e0be during the review. The final source references and excerpts are pinned to c15e0be; the reviewer did not make that commit.</p><p>Source excerpts are embedded in this HTML and verified against the reviewed Git revision during generation. <a href="snapshot.json">Source hashes</a> · <a href="validation.json">Validation record</a> · <a href="probes/src/main.rs">Offline probes</a>.</p></details></section>
+<section class="section" id="next"><span class="eyebrow">Suggested implementation order</span><h2>Turn the findings into bounded changes</h2><div class="roadmap"><div class="roadmap-item"><span class="step-number">01</span><div><h3>Bound relay resources</h3><p>Put queue limits and write deadlines around slow clients.</p><small>F01</small></div></div><div class="roadmap-item"><span class="step-number">02</span><div><h3>Preserve terrain integrity</h3><p>Keep validity information, validate inputs, and publish coherent versions.</p><small>F03 · F06 · F07 · F08</small></div></div><div class="roadmap-item"><span class="step-number">03</span><div><h3>Make streaming recoverable</h3><p>Budget the cache and test failure and source-switch transitions.</p><small>F02 · F04 · F05</small></div></div><div class="roadmap-item"><span class="step-number">04</span><div><h3>Make service accounting durable</h3><p>Persist request reservations across same-day restarts.</p><small>F09</small></div></div></div><p class="small-note">Recommendations are proposed follow-up work. Application behavior was not changed as part of this review.</p></section>
+<footer><span>vr_fire / engineering review / 2026-09-25</span><span>Self-contained HTML · embedded SVG · no network dependencies</span></footer></main><script>
+const findings=[...document.querySelectorAll('.finding')];
+const search=document.querySelector('#search'), priority=document.querySelector('#priority'), area=document.querySelector('#area');
+function filter(){const q=search.value.toLowerCase().trim();let shown=0;for(const f of findings){f.hidden=!!((priority.value&&f.dataset.priority!==priority.value)||(area.value&&f.dataset.area!==area.value)||(q&&!f.textContent.toLowerCase().includes(q)));if(!f.hidden)shown++;}document.querySelector('#result-count').textContent=shown+' of '+findings.length+' findings shown';document.querySelector('#no-results').hidden=shown!==0;}
+for(const el of [search,priority,area])el.addEventListener('input',filter);
+let expand=false;document.querySelector('#expand').addEventListener('click',()=>{expand=!expand;for(const f of findings)if(!f.hidden)f.querySelector('details').open=expand;document.querySelector('#expand').textContent=expand?'Collapse all':'Expand all';});
+for(const b of document.querySelectorAll('[data-zoom]'))b.addEventListener('click',()=>{const frame=b.closest('.diagram-card').querySelector('.diagram-inner');const old=Number(frame.dataset.scale||1);const scale=b.dataset.zoom==='reset'?1:Math.max(1,Math.min(3.5,old+(b.dataset.zoom==='in'?.5:-.5)));frame.dataset.scale=scale;frame.style.width=scale*100+'%';});
+function showHash(){const target=document.getElementById(location.hash.slice(1));if(target?.classList.contains('finding')){search.value='';priority.value='';area.value='';filter();target.querySelector('details').open=true;target.scrollIntoView();}}
+addEventListener('hashchange',showHash);showHash();
+let printState=[];function beforePrint(){printState=findings.map(f=>({f,hidden:f.hidden,open:f.querySelector('details').open}));for(const f of findings){f.hidden=false;f.querySelector('details').open=true;}}
+function afterPrint(){for(const s of printState){s.f.hidden=s.hidden;s.f.querySelector('details').open=s.open;}printState=[];}
+addEventListener('beforeprint',beforePrint);addEventListener('afterprint',afterPrint);document.querySelector('#print').addEventListener('click',()=>window.print());
+document.documentElement.dataset.reportReady='true';
+</script></body></html>

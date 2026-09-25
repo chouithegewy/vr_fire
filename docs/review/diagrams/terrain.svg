@@ -1,0 +1,179 @@
+<svg role="img" aria-labelledby="terrain-title terrain-desc" width="1340pt" height="663pt"
+ viewBox="0.00 0.00 1340.00 663.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title id="terrain-title">Terrain persistence &amp; provenance</title><desc id="terrain-desc">JSON and GeoTIFF are the authoritative store; meshes and VRH patches are derived outputs. Cardinalities describe logical products of a successful run; they are not database constraints. Sources are stored as a string array, not a join table. A packed patch can read several tiles for its border ring or super-tile footprint. Old files may violate the intended current-output relationship (F07). Bake has four LODs; packed grid patches have five, plus a separate super level.</desc>
+<g id="terrain-graph0" class="graph" transform="scale(1 1) rotate(0) translate(25.2 638.2)">
+<title>terrain</title>
+
+<g id="terrain-edge1" class="edge">
+<title>index&#45;&gt;grid</title>
+<path fill="none" stroke="#527476" d="M209.21,-457.45C254.9,-473.36 307.92,-491.82 351.19,-506.89"/>
+<polygon fill="#527476" stroke="#527476" points="350.29,-508.98 357.17,-508.97 351.78,-504.68 350.29,-508.98"/>
+<text xml:space="preserve" text-anchor="middle" x="280.88" y="-495.81" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">embeds</text>
+<text xml:space="preserve" text-anchor="middle" x="337.71" y="-508.46" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="230.1" y="-452.2" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-edge2" class="edge">
+<title>index&#45;&gt;entry</title>
+<path fill="none" stroke="#527476" d="M209.21,-385.3C252.75,-370.14 302.96,-352.66 345.03,-338.01"/>
+<polygon fill="#527476" stroke="#527476" points="345.7,-340.19 351.09,-335.9 344.2,-335.89 345.7,-340.19"/>
+<text xml:space="preserve" text-anchor="middle" x="280.88" y="-374.01" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">maps tile keys</text>
+<text xml:space="preserve" text-anchor="middle" x="337.46" y="-346.92" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="224.27" y="-367.54" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-edge3" class="edge">
+<title>entry&#45;&gt;source</title>
+<path fill="none" stroke="#527476" d="M521.06,-352.51C572.43,-381 638.78,-417.8 693.72,-448.26"/>
+<polygon fill="#527476" stroke="#527476" points="692.59,-450.24 699.38,-451.4 694.8,-446.26 692.59,-450.24"/>
+<text xml:space="preserve" text-anchor="middle" x="610.88" y="-433.42" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">records source names</text>
+<text xml:space="preserve" text-anchor="middle" x="679.75" y="-447.54" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="542.01" y="-350.85" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="terrain-edge4" class="edge">
+<title>entry&#45;&gt;raster</title>
+<path fill="none" stroke="#527476" d="M521.06,-306.38C573.11,-306.38 640.55,-306.38 695.91,-306.38"/>
+<polygon fill="#527476" stroke="#527476" points="695.62,-308.65 702.12,-306.38 695.62,-304.1 695.62,-308.65"/>
+<text xml:space="preserve" text-anchor="middle" x="610.88" y="-309.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">locates height file</text>
+<text xml:space="preserve" text-anchor="middle" x="684.61" y="-312.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="540.09" y="-294.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-edge5" class="edge">
+<title>entry&#45;&gt;meta</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M521.06,-256.78C572.53,-226.09 639.05,-186.44 694.05,-153.64"/>
+<polygon fill="#527476" stroke="#527476" points="694.98,-155.74 699.4,-150.46 692.65,-151.83 694.98,-155.74"/>
+<text xml:space="preserve" text-anchor="middle" x="610.88" y="-233.94" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">bake derives</text>
+<text xml:space="preserve" text-anchor="middle" x="688.9" y="-163.92" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="532.87" y="-236.29" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-edge7" class="edge">
+<title>raster&#45;&gt;vrh</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M895.41,-306.38C956.78,-306.38 1036.48,-306.38 1098.5,-306.38"/>
+<polygon fill="#527476" stroke="#527476" points="1098.34,-308.65 1104.84,-306.38 1098.34,-304.1 1098.34,-308.65"/>
+<text xml:space="preserve" text-anchor="middle" x="1002.38" y="-309.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">pack samples + neighbours</text>
+<text xml:space="preserve" text-anchor="middle" x="1087.32" y="-312.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="914.44" y="-294.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="terrain-edge6" class="edge">
+<title>meta&#45;&gt;lod</title>
+<path fill="none" stroke="#527476" d="M898.45,-91.38C962.08,-91.38 1044.41,-91.38 1106.45,-91.38"/>
+<polygon fill="#527476" stroke="#527476" points="1106.29,-93.65 1112.79,-91.38 1106.29,-89.1 1106.29,-93.65"/>
+<text xml:space="preserve" text-anchor="middle" x="1002.38" y="-94.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">embeds</text>
+<text xml:space="preserve" text-anchor="middle" x="1095.27" y="-97.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">4</text>
+<text xml:space="preserve" text-anchor="middle" x="917.48" y="-79.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="terrain-node1" class="node">
+<title>grid</title>
+<polygon fill="#ffffff" stroke="none" points="358.5,-459.75 358.5,-613 515.25,-613 515.25,-459.75 358.5,-459.75"/>
+<polygon fill="#183b45" stroke="none" points="359.5,-578 359.5,-612 514.25,-612 514.25,-578 359.5,-578"/>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-590.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">GridSpec</text>
+<polygon fill="#e6efed" stroke="none" points="359.5,-549.25 359.5,-578 514.25,-578 514.25,-549.25 359.5,-549.25"/>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-560.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Embedded configuration</text>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-530.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">origin_x: f64</text>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-501.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">origin_y: f64</text>
+<text xml:space="preserve" text-anchor="start" x="367.5" y="-471.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">EPSG:5070; 3,750 m tiles</text>
+<polygon fill="none" stroke="#b4c9c6" points="358.5,-459.75 358.5,-613 515.25,-613 515.25,-459.75 358.5,-459.75"/>
+</g>
+
+<g id="terrain-node2" class="node">
+<title>index</title>
+<polygon fill="#ffffff" stroke="none" points="0,-359.5 0,-483.25 209.25,-483.25 209.25,-359.5 0,-359.5"/>
+<polygon fill="#183b45" stroke="none" points="1,-448.25 1,-482.25 208.25,-482.25 208.25,-448.25 1,-448.25"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-461" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">StoreIndex</text>
+<polygon fill="#e6efed" stroke="none" points="1,-419.5 1,-448.25 208.25,-448.25 208.25,-419.5 1,-419.5"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-430.75" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">store/index.json</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-401.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">grid: GridSpec</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-371.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">tiles: BTreeMap&lt;String, TileEntry&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="0,-359.5 0,-483.25 209.25,-483.25 209.25,-359.5 0,-359.5"/>
+</g>
+
+<g id="terrain-node3" class="node">
+<title>entry</title>
+<polygon fill="#ffffff" stroke="none" points="352.5,-185.5 352.5,-427.25 521.25,-427.25 521.25,-185.5 352.5,-185.5"/>
+<polygon fill="#183b45" stroke="none" points="353.5,-392.25 353.5,-426.25 520.25,-426.25 520.25,-392.25 353.5,-392.25"/>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-405" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">TileEntry</text>
+<polygon fill="#e6efed" stroke="none" points="353.5,-363.5 353.5,-392.25 520.25,-392.25 520.25,-363.5 353.5,-363.5"/>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-374.75" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Embedded JSON entry</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-345.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tx_ty (parent map key)</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-315.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">status: ok | empty | failed</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-286.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">error?: String</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-256.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">min/max_elevation_m?: f32</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-227.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">filled_samples: u32</text>
+<text xml:space="preserve" text-anchor="start" x="361.5" y="-197.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">sources: Vec&lt;String&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="352.5,-185.5 352.5,-427.25 521.25,-427.25 521.25,-185.5 352.5,-185.5"/>
+</g>
+
+<g id="terrain-node4" class="node">
+<title>source</title>
+<polygon fill="#ffffff" stroke="none" points="700.5,-429.75 700.5,-583 898.5,-583 898.5,-429.75 700.5,-429.75"/>
+<polygon fill="#183b45" stroke="none" points="701.5,-548 701.5,-582 897.5,-582 897.5,-548 701.5,-548"/>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-560.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">SourceCell</text>
+<polygon fill="#e6efed" stroke="none" points="701.5,-519.25 701.5,-548 897.5,-548 897.5,-519.25 701.5,-519.25"/>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-530.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">cache/USGS_13_nNNwWWW.tif</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-500.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: north + west</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-471.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">name: nNNwWWW</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-441.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">optional .part / .missing markers</text>
+<polygon fill="none" stroke="#b4c9c6" points="700.5,-429.75 700.5,-583 898.5,-583 898.5,-429.75 700.5,-429.75"/>
+</g>
+
+<g id="terrain-node5" class="node">
+<title>raster</title>
+<polygon fill="#ffffff" stroke="none" points="703.5,-215 703.5,-397.75 895.5,-397.75 895.5,-215 703.5,-215"/>
+<polygon fill="#183b45" stroke="none" points="704.5,-362.75 704.5,-396.75 894.5,-396.75 894.5,-362.75 704.5,-362.75"/>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-375.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Stored height raster</text>
+<polygon fill="#e6efed" stroke="none" points="704.5,-334 704.5,-362.75 894.5,-362.75 894.5,-334 704.5,-334"/>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-345.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">store/{tx}_{ty}.tif</text>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-315.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tx + ty (filename)</text>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-286.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">376 × 376 f32 samples</text>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-256.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">10 m; point&#45;registered</text>
+<text xml:space="preserve" text-anchor="start" x="712.5" y="-227.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">EPSG:5070 + georeference</text>
+<polygon fill="none" stroke="#b4c9c6" points="703.5,-215 703.5,-397.75 895.5,-397.75 895.5,-215 703.5,-215"/>
+</g>
+
+<g id="terrain-node6" class="node">
+<title>meta</title>
+<polygon fill="#ffffff" stroke="none" points="700.5,0 700.5,-182.75 898.5,-182.75 898.5,0 700.5,0"/>
+<polygon fill="#183b45" stroke="none" points="701.5,-147.75 701.5,-181.75 897.5,-181.75 897.5,-147.75 701.5,-147.75"/>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-160.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">TileMetadata</text>
+<polygon fill="#e6efed" stroke="none" points="701.5,-119 701.5,-147.75 897.5,-147.75 897.5,-119 701.5,-119"/>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-130.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">tiles/{tx}_{ty}.json</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-100.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tile.tx + tile.ty</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-71.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">bounds, grid_origin, crs</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-41.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">vertical_datum, sources, version</text>
+<text xml:space="preserve" text-anchor="start" x="709.5" y="-12.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">heights_file → tiles/{tile}.f32</text>
+<polygon fill="none" stroke="#b4c9c6" points="700.5,0 700.5,-182.75 898.5,-182.75 898.5,0 700.5,0"/>
+</g>
+
+<g id="terrain-node7" class="node">
+<title>lod</title>
+<polygon fill="#ffffff" stroke="none" points="1114.12,0 1114.12,-182.75 1281.38,-182.75 1281.38,0 1114.12,0"/>
+<polygon fill="#183b45" stroke="none" points="1115.12,-147.75 1115.12,-181.75 1280.38,-181.75 1280.38,-147.75 1115.12,-147.75"/>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-160.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">LodInfo</text>
+<polygon fill="#e6efed" stroke="none" points="1115.12,-119 1115.12,-147.75 1280.38,-147.75 1280.38,-119 1115.12,-119"/>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-130.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Embedded metadata array</text>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-100.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tile + lod</text>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-71.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">spacing_m, nodes_per_side</text>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-41.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">file → lod{0..3}/{tile}.glb</text>
+<text xml:space="preserve" text-anchor="start" x="1123.12" y="-12.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">10 / 30 / 150 / 750 m</text>
+<polygon fill="none" stroke="#b4c9c6" points="1114.12,0 1114.12,-182.75 1281.38,-182.75 1281.38,0 1114.12,0"/>
+</g>
+
+<g id="terrain-node8" class="node">
+<title>vrh</title>
+<polygon fill="#ffffff" stroke="none" points="1106.25,-215 1106.25,-397.75 1289.25,-397.75 1289.25,-215 1106.25,-215"/>
+<polygon fill="#183b45" stroke="none" points="1107.25,-362.75 1107.25,-396.75 1288.25,-396.75 1288.25,-362.75 1107.25,-362.75"/>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-375.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">PackedPatch</text>
+<polygon fill="#e6efed" stroke="none" points="1107.25,-334 1107.25,-362.75 1288.25,-362.75 1288.25,-334 1107.25,-334"/>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-345.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">packed/t{0..4}/… or s/… .vrh</text>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-315.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: kind + level + grid address</text>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-286.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">VRH1, side, step, base, wide</text>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-256.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Brotli residuals + border ring</text>
+<text xml:space="preserve" text-anchor="start" x="1115.25" y="-227.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">identity is in the path</text>
+<polygon fill="none" stroke="#b4c9c6" points="1106.25,-215 1106.25,-397.75 1289.25,-397.75 1289.25,-215 1106.25,-215"/>
+</g>
+</g>
+</svg>

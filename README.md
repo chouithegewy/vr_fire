@@ -48,6 +48,14 @@ Or open the script in Blender's Scripting tab and click Run. It imports every ba
   methods (up to 18× at 50 cm error).
 - `site/`: source of the chilos.dev home page.
 
+## Code review
+
+[Open the offline HTML report](docs/review/index.html) for the September 25, 2026 review:
+nine findings, source evidence, validation results, and three entity relationship diagrams.
+A [Markdown version](docs/review/README.md) and reproducible offline probes are included.
+
+Fix specification: [bounded relay queues and slow-client isolation](docs/superpowers/specs/2026-09-25-relay-backpressure-design.md) (F01; implementation pending).
+
 ## Conventions
 
 - Tiles are 3,750 m square: 10×10 ML windows (375 m), 125×125 ML cells (30 m).

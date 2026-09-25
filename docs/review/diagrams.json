@@ -1,0 +1,76 @@
+[
+  {
+    "id":"terrain", "title":"Terrain persistence & provenance", "subtitle":"JSON and GeoTIFF are the authoritative store; meshes and VRH patches are derived outputs.",
+    "sources":["src/store.rs","src/grid.rs","src/source.rs","src/export.rs","src/pack.rs","src/lod.rs"],
+    "notes":"Cardinalities describe logical products of a successful run; they are not database constraints. Sources are stored as a string array, not a join table. A packed patch can read several tiles for its border ring or super-tile footprint. Old files may violate the intended current-output relationship (F07). Bake has four LODs; packed grid patches have five, plus a separate super level.",
+    "nodes":[
+      {"id":"grid","name":"GridSpec","kind":"Embedded configuration","fields":["origin_x: f64","origin_y: f64","EPSG:5070; 3,750 m tiles"]},
+      {"id":"index","name":"StoreIndex","kind":"store/index.json","fields":["grid: GridSpec","tiles: BTreeMap<String, TileEntry>"]},
+      {"id":"entry","name":"TileEntry","kind":"Embedded JSON entry","fields":["K: tx_ty (parent map key)","status: ok | empty | failed","error?: String","min/max_elevation_m?: f32","filled_samples: u32","sources: Vec<String>"]},
+      {"id":"source","name":"SourceCell","kind":"cache/USGS_13_nNNwWWW.tif","fields":["K: north + west","name: nNNwWWW","optional .part / .missing markers"]},
+      {"id":"raster","name":"Stored height raster","kind":"store/{tx}_{ty}.tif","fields":["K: tx + ty (filename)","376 × 376 f32 samples","10 m; point-registered","EPSG:5070 + georeference"]},
+      {"id":"meta","name":"TileMetadata","kind":"tiles/{tx}_{ty}.json","fields":["K: tile.tx + tile.ty","bounds, grid_origin, crs","vertical_datum, sources, version","heights_file → tiles/{tile}.f32"]},
+      {"id":"lod","name":"LodInfo","kind":"Embedded metadata array","fields":["K: tile + lod","spacing_m, nodes_per_side","file → lod{0..3}/{tile}.glb","10 / 30 / 150 / 750 m"]},
+      {"id":"vrh","name":"PackedPatch","kind":"packed/t{0..4}/… or s/… .vrh","fields":["K: kind + level + grid address","VRH1, side, step, base, wide","Brotli residuals + border ring","identity is in the path"]}
+    ],
+    "edges":[
+      {"from":"index","to":"grid","a":"1","b":"1","label":"embeds"},
+      {"from":"index","to":"entry","a":"1","b":"0..*","label":"maps tile keys"},
+      {"from":"entry","to":"source","a":"0..*","b":"0..*","label":"records source names"},
+      {"from":"entry","to":"raster","a":"1","b":"0..1","label":"locates height file"},
+      {"from":"entry","to":"meta","a":"1","b":"0..1","label":"bake derives","derived":true},
+      {"from":"meta","to":"lod","a":"1","b":"4","label":"embeds"},
+      {"from":"raster","to":"vrh","a":"0..*","b":"0..*","label":"pack samples + neighbours","derived":true}
+    ]
+  },
+  {
+    "id":"streaming", "title":"Viewer streaming & rendering", "subtitle":"Runtime identities connect patch jobs, CPU heights, ECS entities and image mosaics.",
+    "sources":["viewer/src/terrain.rs","viewer/src/cog.rs","viewer/src/imagery.rs"],
+    "notes":"All entities here are in memory. Patch is a value key (Super, Tile or Hires), not a database row. A job uses either packed bytes or the COG block dependency list; the optional many-to-many COG dependency is shown. Built and Job reference the same patch address at different lifecycle stages. Cardinalities describe a single viewer instance.",
+    "nodes":[
+      {"id":"terrain","name":"Terrain","kind":"Bevy resource","fields":["grid, albers, source","jobs: Vec<Job>","built: HashMap<Patch, Built>","hires: HashMap<TileId, HiresState>"]},
+      {"id":"patch","name":"Patch","kind":"Value key","fields":["K: Super(sx, sy)","or Tile(tx, ty, lod)","or Hires(tx, ty)"]},
+      {"id":"job","name":"Job","kind":"Pending work","fields":["patch: Patch; prio: f64","stage: Fetch | Plan | Wait | Build","ll: Vec<(lon, lat)>","heights: Vec<f32>"]},
+      {"id":"built","name":"Built","kind":"Terrain.built value","fields":["K: Patch (map key)","entity: Entity","heights: Arc<Heights>"]},
+      {"id":"heights","name":"Heights","kind":"CPU physics / picking","fields":["x_min, y_max, spacing: f64","n: usize","data: Vec<f32>"]},
+      {"id":"entity","name":"Terrain ECS entity","kind":"Rendered patch","fields":["K: Entity","Mesh3d, material handle","Draped(Option<MosaicKey>)","Anchor, Transform, Visibility"]},
+      {"id":"mosaic","name":"Mosaic","kind":"Imagery.mosaics entry","fields":["K: z, x0, y0, x1, y1","Waiting | Building | Ready","Ready → material → image"]},
+      {"id":"block","name":"COG block","kind":"Cog.tiles entry","fields":["K: cell + level + tx + ty","Queued | Pending | Ready | Failed","Ready: Arc<TileData>","w, h, data: Vec<f32>"]},
+      {"id":"cell","name":"CellMeta / Level","kind":"Cog.cells ready metadata","fields":["K: north + west","origin_lon, origin_lat, header","levels: dimensions + byte ranges"]}
+    ],
+    "edges":[
+      {"from":"terrain","to":"job","a":"1","b":"0..*","label":"owns queue"},
+      {"from":"terrain","to":"built","a":"1","b":"0..*","label":"owns built map"},
+      {"from":"job","to":"patch","a":"0..1","b":"1","label":"addresses"},
+      {"from":"built","to":"patch","a":"0..1","b":"1","label":"keyed by"},
+      {"from":"built","to":"heights","a":"1","b":"1","label":"retains"},
+      {"from":"built","to":"entity","a":"1","b":"1","label":"references"},
+      {"from":"entity","to":"mosaic","a":"0..*","b":"0..1","label":"requests detail key"},
+      {"from":"job","to":"block","a":"0..*","b":"0..*","label":"Wait keys (COG path)"},
+      {"from":"cell","to":"block","a":"1","b":"0..*","label":"defines byte ranges"}
+    ]
+  },
+  {
+    "id":"services", "title":"Multiplayer sessions & lidar cache", "subtitle":"Two independent services: transient player state with an event log, and cached lidar products.",
+    "sources":["relay/src/main.rs","relay/src/stats.rs","viewer/src/net.rs","hires/src/main.rs"],
+    "notes":"Player IDs are process-local and restart at 1. JSONL event IDs are historical references, not globally unique foreign keys. Event (the in-memory recent view) drops the id/name fields stored in JSONL and retains only the last 60 entries. The lidar quota has no persistent entity today (F09). The two services have no code-level data relationship.",
+    "nodes":[
+      {"id":"peer","name":"Relay connection","kind":"Process-local state","fields":["K: id: u64 (per process)","TCP / WebSocket","Sender<String> outbound queue"]},
+      {"id":"player","name":"Player","kind":"Stats.players[id]","fields":["K: id (map key)","name, joined, last_seen","last_xy, rounded lat/lon","speed_kmh, boosting, updates, drops"]},
+      {"id":"event","name":"JSONL event","kind":"RELAY_LOG / players.jsonl","fields":["no unique event key","t, kind, id, name, text","lat?, lon?, online","join | drop | flipped | leave"]},
+      {"id":"recent","name":"Event","kind":"Stats.events (max 60)","fields":["at, kind, text","lat?, lon?","no retained id or name fields"]},
+      {"id":"remote","name":"Remote","kind":"Other clients' Remotes.trucks[id]","fields":["K: id (per client map)","name, albers, h, target_rot, vel","entity, beacon, label","seen, rate, jitter, smoothing_err"]},
+      {"id":"quota","name":"Lidar State","kind":"Service singleton / memory","fields":["running: HashSet<TileId>","day: u64","calls_today: u32"]},
+      {"id":"lidarjob","name":"Lidar build request","kind":"Worker / runtime","fields":["K: tile.tx + tile.ty","at most one running job","request → resample → fill → encode"]},
+      {"id":"cache","name":"Lidar cache entry","kind":"HIRES_CACHE / files","fields":["K: tx_ty (filename)","{tile}.vrh: successful patch","{tile}.none: no-lidar message","success checked before .none"]}
+    ],
+    "edges":[
+      {"from":"peer","to":"player","a":"1","b":"1","label":"tracks while connected"},
+      {"from":"peer","to":"event","a":"1","b":"0..*","label":"records historical events","derived":true},
+      {"from":"event","to":"recent","a":"1","b":"0..1","label":"projects / loads tail","derived":true},
+      {"from":"peer","to":"remote","a":"1","b":"0..*","label":"pose seen by other clients"},
+      {"from":"quota","to":"lidarjob","a":"1","b":"0..1","label":"admits running tile"},
+      {"from":"lidarjob","to":"cache","a":"0..*","b":"0..1","label":"produces outcome over time","derived":true}
+    ]
+  }
+]

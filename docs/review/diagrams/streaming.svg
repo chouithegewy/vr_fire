@@ -1,0 +1,208 @@
+<svg role="img" aria-labelledby="streaming-title streaming-desc" width="1325pt" height="818pt"
+ viewBox="0.00 0.00 1325.00 818.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title id="streaming-title">Viewer streaming &amp; rendering</title><desc id="streaming-desc">Runtime identities connect patch jobs, CPU heights, ECS entities and image mosaics. All entities here are in memory. Patch is a value key (Super, Tile or Hires), not a database row. A job uses either packed bytes or the COG block dependency list; the optional many-to-many COG dependency is shown. Built and Job reference the same patch address at different lifecycle stages. Cardinalities describe a single viewer instance.</desc>
+<g id="streaming-graph0" class="graph" transform="scale(1 1) rotate(0) translate(25.2 793.2)">
+<title>streaming</title>
+
+<g id="streaming-edge1" class="edge">
+<title>terrain&#45;&gt;job</title>
+<path fill="none" stroke="#527476" d="M215.77,-361.24C261.31,-348.38 314.26,-333.43 359.47,-320.67"/>
+<polygon fill="#527476" stroke="#527476" points="359.86,-322.93 365.49,-318.97 358.62,-318.55 359.86,-322.93"/>
+<text xml:space="preserve" text-anchor="middle" x="289.5" y="-353.58" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">owns queue</text>
+<text xml:space="preserve" text-anchor="middle" x="351.04" y="-329.15" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="231.67" y="-344.4" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-edge2" class="edge">
+<title>terrain&#45;&gt;built</title>
+<path fill="none" stroke="#527476" d="M215.77,-421.51C270.12,-436.86 335.03,-455.18 384.73,-469.21"/>
+<polygon fill="#527476" stroke="#527476" points="383.94,-471.35 390.81,-470.93 385.17,-466.97 383.94,-471.35"/>
+<text xml:space="preserve" text-anchor="middle" x="289.5" y="-453.58" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">owns built map</text>
+<text xml:space="preserve" text-anchor="middle" x="371.54" y="-471.58" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="236.49" y="-415.02" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-edge3" class="edge">
+<title>job&#45;&gt;patch</title>
+<path fill="none" stroke="#527476" d="M561.39,-291.38C629.27,-291.38 718.37,-291.38 777.86,-291.38"/>
+<polygon fill="#527476" stroke="#527476" points="777.68,-293.65 784.18,-291.38 777.68,-289.1 777.68,-293.65"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-294.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">addresses</text>
+<text xml:space="preserve" text-anchor="middle" x="766.66" y="-297.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="580.42" y="-279.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+</g>
+
+<g id="streaming-edge8" class="edge">
+<title>job&#45;&gt;block</title>
+<path fill="none" stroke="#527476" d="M561.39,-240.39C614.34,-212.31 680.2,-177.38 734.85,-148.4"/>
+<polygon fill="#527476" stroke="#527476" points="735.78,-150.48 740.46,-145.42 733.65,-146.46 735.78,-150.48"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-218.42" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">Wait keys (COG path)</text>
+<text xml:space="preserve" text-anchor="middle" x="729.14" y="-158.35" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="574.05" y="-220.51" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="streaming-edge4" class="edge">
+<title>built&#45;&gt;patch</title>
+<path fill="none" stroke="#527476" d="M536.18,-453.76C606.11,-416.67 711.98,-360.53 779.12,-324.92"/>
+<polygon fill="#527476" stroke="#527476" points="779.89,-327.09 784.56,-322.03 777.75,-323.07 779.89,-327.09"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-418.42" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">keyed by</text>
+<text xml:space="preserve" text-anchor="middle" x="773.24" y="-334.96" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="548.84" y="-433.87" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+</g>
+
+<g id="streaming-edge5" class="edge">
+<title>built&#45;&gt;heights</title>
+<path fill="none" stroke="#527476" d="M536.18,-528.99C597.55,-561.54 686.6,-608.76 752.86,-643.9"/>
+<polygon fill="#527476" stroke="#527476" points="751.46,-645.73 758.27,-646.77 753.59,-641.71 751.46,-645.73"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-618.42" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">retains</text>
+<text xml:space="preserve" text-anchor="middle" x="738.63" y="-643.28" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="557.16" y="-526.94" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-edge6" class="edge">
+<title>built&#45;&gt;entity</title>
+<path fill="none" stroke="#527476" d="M536.18,-491.38C595.34,-491.38 680.2,-491.38 745.59,-491.38"/>
+<polygon fill="#527476" stroke="#527476" points="745.45,-493.65 751.95,-491.38 745.45,-489.1 745.45,-493.65"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-494.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">references</text>
+<text xml:space="preserve" text-anchor="middle" x="734.43" y="-497.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="555.22" y="-479.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-edge7" class="edge">
+<title>entity&#45;&gt;mosaic</title>
+<path fill="none" stroke="#527476" d="M933.32,-491.38C985.19,-491.38 1050.42,-491.38 1102.33,-491.38"/>
+<polygon fill="#527476" stroke="#527476" points="1102.21,-493.65 1108.71,-491.38 1102.21,-489.1 1102.21,-493.65"/>
+<text xml:space="preserve" text-anchor="middle" x="1027.5" y="-494.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">requests detail key</text>
+<text xml:space="preserve" text-anchor="middle" x="1091.19" y="-497.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="952.35" y="-479.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="streaming-edge9" class="edge">
+<title>cell&#45;&gt;block</title>
+<path fill="none" stroke="#527476" d="M565.32,-91.38C617.32,-91.38 680.92,-91.38 734.07,-91.38"/>
+<polygon fill="#527476" stroke="#527476" points="733.82,-93.65 740.32,-91.38 733.82,-89.1 733.82,-93.65"/>
+<text xml:space="preserve" text-anchor="middle" x="653.62" y="-94.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">defines byte ranges</text>
+<text xml:space="preserve" text-anchor="middle" x="722.8" y="-97.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="584.35" y="-79.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="streaming-node1" class="node">
+<title>terrain</title>
+<polygon fill="#ffffff" stroke="none" points="0,-300 0,-482.75 216,-482.75 216,-300 0,-300"/>
+<polygon fill="#183b45" stroke="none" points="1,-447.75 1,-481.75 215,-481.75 215,-447.75 1,-447.75"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-460.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Terrain</text>
+<polygon fill="#e6efed" stroke="none" points="1,-419 1,-447.75 215,-447.75 215,-419 1,-419"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-430.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Bevy resource</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-400.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">grid, albers, source</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-371.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">jobs: Vec&lt;Job&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-341.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">built: HashMap&lt;Patch, Built&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-312.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">hires: HashMap&lt;TileId, HiresState&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="0,-300 0,-482.75 216,-482.75 216,-300 0,-300"/>
+</g>
+
+<g id="streaming-node2" class="node">
+<title>patch</title>
+<polygon fill="#ffffff" stroke="none" points="785.62,-214.75 785.62,-368 901.12,-368 901.12,-214.75 785.62,-214.75"/>
+<polygon fill="#183b45" stroke="none" points="786.62,-333 786.62,-367 900.12,-367 900.12,-333 786.62,-333"/>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-345.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Patch</text>
+<polygon fill="#e6efed" stroke="none" points="786.62,-304.25 786.62,-333 900.12,-333 900.12,-304.25 786.62,-304.25"/>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-315.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Value key</text>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-285.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: Super(sx, sy)</text>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-256.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">or Tile(tx, ty, lod)</text>
+<text xml:space="preserve" text-anchor="start" x="794.62" y="-226.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">or Hires(tx, ty)</text>
+<polygon fill="none" stroke="#b4c9c6" points="785.62,-214.75 785.62,-368 901.12,-368 901.12,-214.75 785.62,-214.75"/>
+</g>
+
+<g id="streaming-node3" class="node">
+<title>job</title>
+<polygon fill="#ffffff" stroke="none" points="366.75,-200 366.75,-382.75 561.75,-382.75 561.75,-200 366.75,-200"/>
+<polygon fill="#183b45" stroke="none" points="367.75,-347.75 367.75,-381.75 560.75,-381.75 560.75,-347.75 367.75,-347.75"/>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-360.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Job</text>
+<polygon fill="#e6efed" stroke="none" points="367.75,-319 367.75,-347.75 560.75,-347.75 560.75,-319 367.75,-319"/>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-330.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Pending work</text>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-300.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">patch: Patch; prio: f64</text>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-271.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">stage: Fetch | Plan | Wait | Build</text>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-241.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">ll: Vec&lt;(lon, lat)&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="375.75" y="-212.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">heights: Vec&lt;f32&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="366.75,-200 366.75,-382.75 561.75,-382.75 561.75,-200 366.75,-200"/>
+</g>
+
+<g id="streaming-node4" class="node">
+<title>built</title>
+<polygon fill="#ffffff" stroke="none" points="392.25,-414.75 392.25,-568 536.25,-568 536.25,-414.75 392.25,-414.75"/>
+<polygon fill="#183b45" stroke="none" points="393.25,-533 393.25,-567 535.25,-567 535.25,-533 393.25,-533"/>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-545.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Built</text>
+<polygon fill="#e6efed" stroke="none" points="393.25,-504.25 393.25,-533 535.25,-533 535.25,-504.25 393.25,-504.25"/>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-515.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Terrain.built value</text>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-485.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: Patch (map key)</text>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-456.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">entity: Entity</text>
+<text xml:space="preserve" text-anchor="start" x="401.25" y="-426.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">heights: Arc&lt;Heights&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="392.25,-414.75 392.25,-568 536.25,-568 536.25,-414.75 392.25,-414.75"/>
+</g>
+
+<g id="streaming-node5" class="node">
+<title>heights</title>
+<polygon fill="#ffffff" stroke="none" points="759.38,-614.75 759.38,-768 927.38,-768 927.38,-614.75 759.38,-614.75"/>
+<polygon fill="#183b45" stroke="none" points="760.38,-733 760.38,-767 926.38,-767 926.38,-733 760.38,-733"/>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-745.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Heights</text>
+<polygon fill="#e6efed" stroke="none" points="760.38,-704.25 760.38,-733 926.38,-733 926.38,-704.25 760.38,-704.25"/>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-715.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">CPU physics / picking</text>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-685.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">x_min, y_max, spacing: f64</text>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-656.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">n: usize</text>
+<text xml:space="preserve" text-anchor="start" x="768.38" y="-626.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">data: Vec&lt;f32&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="759.38,-614.75 759.38,-768 927.38,-768 927.38,-614.75 759.38,-614.75"/>
+</g>
+
+<g id="streaming-node6" class="node">
+<title>entity</title>
+<polygon fill="#ffffff" stroke="none" points="753.38,-400 753.38,-582.75 933.38,-582.75 933.38,-400 753.38,-400"/>
+<polygon fill="#183b45" stroke="none" points="754.38,-547.75 754.38,-581.75 932.38,-581.75 932.38,-547.75 754.38,-547.75"/>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-560.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Terrain ECS entity</text>
+<polygon fill="#e6efed" stroke="none" points="754.38,-519 754.38,-547.75 932.38,-547.75 932.38,-519 754.38,-519"/>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-530.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Rendered patch</text>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-500.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: Entity</text>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-471.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Mesh3d, material handle</text>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-441.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Draped(Option&lt;MosaicKey&gt;)</text>
+<text xml:space="preserve" text-anchor="start" x="762.38" y="-412.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Anchor, Transform, Visibility</text>
+<polygon fill="none" stroke="#b4c9c6" points="753.38,-400 753.38,-582.75 933.38,-582.75 933.38,-400 753.38,-400"/>
+</g>
+
+<g id="streaming-node7" class="node">
+<title>mosaic</title>
+<polygon fill="#ffffff" stroke="none" points="1110,-414.75 1110,-568 1275,-568 1275,-414.75 1110,-414.75"/>
+<polygon fill="#183b45" stroke="none" points="1111,-533 1111,-567 1274,-567 1274,-533 1111,-533"/>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-545.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Mosaic</text>
+<polygon fill="#e6efed" stroke="none" points="1111,-504.25 1111,-533 1274,-533 1274,-504.25 1111,-504.25"/>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-515.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Imagery.mosaics entry</text>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-485.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: z, x0, y0, x1, y1</text>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-456.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Waiting | Building | Ready</text>
+<text xml:space="preserve" text-anchor="start" x="1119" y="-426.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Ready → material → image</text>
+<polygon fill="none" stroke="#b4c9c6" points="1110,-414.75 1110,-568 1275,-568 1275,-414.75 1110,-414.75"/>
+</g>
+
+<g id="streaming-node8" class="node">
+<title>block</title>
+<polygon fill="#ffffff" stroke="none" points="741.75,0 741.75,-182.75 945,-182.75 945,0 741.75,0"/>
+<polygon fill="#183b45" stroke="none" points="742.75,-147.75 742.75,-181.75 944,-181.75 944,-147.75 742.75,-147.75"/>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-160.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">COG block</text>
+<polygon fill="#e6efed" stroke="none" points="742.75,-119 742.75,-147.75 944,-147.75 944,-119 742.75,-119"/>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-130.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Cog.tiles entry</text>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-100.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: cell + level + tx + ty</text>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-71.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Queued | Pending | Ready | Failed</text>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-41.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Ready: Arc&lt;TileData&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="750.75" y="-12.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">w, h, data: Vec&lt;f32&gt;</text>
+<polygon fill="none" stroke="#b4c9c6" points="741.75,0 741.75,-182.75 945,-182.75 945,0 741.75,0"/>
+</g>
+
+<g id="streaming-node9" class="node">
+<title>cell</title>
+<polygon fill="#ffffff" stroke="none" points="363,-14.75 363,-168 565.5,-168 565.5,-14.75 363,-14.75"/>
+<polygon fill="#183b45" stroke="none" points="364,-133 364,-167 564.5,-167 564.5,-133 364,-133"/>
+<text xml:space="preserve" text-anchor="start" x="372" y="-145.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">CellMeta / Level</text>
+<polygon fill="#e6efed" stroke="none" points="364,-104.25 364,-133 564.5,-133 564.5,-104.25 364,-104.25"/>
+<text xml:space="preserve" text-anchor="start" x="372" y="-115.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Cog.cells ready metadata</text>
+<text xml:space="preserve" text-anchor="start" x="372" y="-85.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: north + west</text>
+<text xml:space="preserve" text-anchor="start" x="372" y="-56.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">origin_lon, origin_lat, header</text>
+<text xml:space="preserve" text-anchor="start" x="372" y="-26.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">levels: dimensions + byte ranges</text>
+<polygon fill="none" stroke="#b4c9c6" points="363,-14.75 363,-168 565.5,-168 565.5,-14.75 363,-14.75"/>
+</g>
+</g>
+</svg>

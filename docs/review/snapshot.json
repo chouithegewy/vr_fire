@@ -1,0 +1,74 @@
+{
+  "revision": "c15e0beb052d4373430d1486e4065f69e49edc63",
+  "date": "2026-09-25",
+  "files": [
+    {
+      "file": "hires/src/main.rs",
+      "sha256": "7de9823cf7db34456c1df8a9ba0e839ae4a8d9023af74bd6b6294d1ee06b5967"
+    },
+    {
+      "file": "relay/src/main.rs",
+      "sha256": "01d8df3c05607922bed1c596dcb98d2da0ddf317dce347f0bad8c9a3c89e18cb"
+    },
+    {
+      "file": "relay/src/stats.rs",
+      "sha256": "db9e25f45127545ec83d1c9c54466953f6ec6901ab75a2848707735ac247b531"
+    },
+    {
+      "file": "scripts/deploy_viewer.sh",
+      "sha256": "0fc7f14115925ca9f64e39f84c89b6f01ad51d35f37e7cda9daa2923403fa83a"
+    },
+    {
+      "file": "src/codec.rs",
+      "sha256": "2d25c3f4049c1f84059e4dcaa9e700551b698200d3e36446852278d661603254"
+    },
+    {
+      "file": "src/export.rs",
+      "sha256": "47cf1f947aa1ae6d3d948c6847cffcea0eac306989d220d5ba9ce8e0433d82df"
+    },
+    {
+      "file": "src/grid.rs",
+      "sha256": "ddead778149c478fbbc56c9de246cdc04a7fbc54ed2d2cfc36824e65471ab8cb"
+    },
+    {
+      "file": "src/lod.rs",
+      "sha256": "dcfbe9168c91e60bc7fe25a327f90e28753939a99526dfc21e10a06e33c1a784"
+    },
+    {
+      "file": "src/pack.rs",
+      "sha256": "824083a1c907f6f0c00c9001421f5a276464ef38029e92dd34b61fde44f05e3d"
+    },
+    {
+      "file": "src/reproject.rs",
+      "sha256": "16d35787408ed0a83b671a0f43fa10e696df080e34854c1d2c9c9c18525f594b"
+    },
+    {
+      "file": "src/source.rs",
+      "sha256": "dd2a1ee5bcec2a6b42c193dff9882d8c6e345cad8b8610f8ab8c4b73ac50d4a5"
+    },
+    {
+      "file": "src/store.rs",
+      "sha256": "cc619ce183b8ad8c96009cfd654b66300be28c8dc9208e0ff4b6f304e46e699a"
+    },
+    {
+      "file": "viewer/deploy/vr-fire-relay.service",
+      "sha256": "495dd0f45ff580ada0fdfde93e8f510fbecf13ff335f442226d0cb493ce08d63"
+    },
+    {
+      "file": "viewer/src/cog.rs",
+      "sha256": "11d458e1a0e9ef041811c5396540d5355e22f1a8445c547bfe9f2d5b0b68b29a"
+    },
+    {
+      "file": "viewer/src/imagery.rs",
+      "sha256": "b38b1739860207d5c90391525612d9bb441f6c93b1e7b09f3b1ea0a7f2fc2737"
+    },
+    {
+      "file": "viewer/src/net.rs",
+      "sha256": "8f4c4c9002137729dfcb602c16a5b510a821e16eb76e89dc8afd1600881a6c34"
+    },
+    {
+      "file": "viewer/src/terrain.rs",
+      "sha256": "028e21f3d8a3336b9693a12d3c4f371f0ebd495076f0716275c423315820a237"
+    }
+  ]
+}

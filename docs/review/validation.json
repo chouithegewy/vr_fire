@@ -1,0 +1,18 @@
+{
+  "passed": 94,
+  "ignored": 1,
+  "probes": 4,
+  "toolchain": "rustc 1.100.0-nightly (a36d05efa 2026-09-09); cargo 1.100.0-nightly (3c0b53475 2026-09-04)",
+  "checks": [
+    {"name":"Core library", "result":"66 unique tests passed", "command":"cargo test --offline -p vr_fire -p relay -p hires", "note":"Initial sandbox run: 60 passed, including the cached LZW decoder test; six local HTTP fixture tests could not bind localhost (EPERM). These were environmental failures."},
+    {"name":"Pipeline + service rerun", "result":"65 core + 8 integration + 3 lidar + 4 relay tests passed", "command":"cargo test --offline -p vr_fire -p relay -p hires -- --skip dem::lenient_tests::decodes_blocks_missing_the_lzw_end_code", "note":"Ran with permission to bind local test sockets. The expensive cached-LZW test was skipped only because it had already passed. One explicitly ignored external download test remained ignored."},
+    {"name":"Viewer", "result":"13 tests passed", "command":"cargo test --offline -p viewer", "note":"Includes the present cached sparse-COG fixture and existing diagnostics changes. This is a native unit-test run, not renderer or browser acceptance."},
+    {"name":"Offline defect probes", "result":"4 of 4 reproduced", "command":"cargo run --offline --manifest-path docs/review/probes/Cargo.toml --target-dir target/review-probes", "note":"Confirms F03, F06, F07 and F08 on synthetic, temporary data. Assertions describe existing defects, not desired behavior; they should fail after repairs."},
+    {"name":"Compression benchmark crate", "result":"Build check passed", "command":"cargo check --offline -p compress-lab", "note":"Checks the remaining workspace crate. No compression benchmark was rerun."},
+    {"name":"HTML report", "result":"Headless Chrome checks passed", "command":"CHROME=/home/david/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome node docs/review/verify.mjs", "note":"Opened via file URL with networking disabled. Verified all nine findings, three SVGs, local links, search, filters, empty state, anchors, expand/collapse, diagram zoom and print-state restoration. Desktop (1440 px) and mobile (390 px) screenshots were inspected. No page overflow, JavaScript exceptions or external requests. This validates the report, not the Bevy application."}
+  ],
+  "warnings": [
+    "The viewer emits recursion_depth_exceeding_limit from AsBindGroup and reports it as future-incompatible on this installed nightly compiler.",
+    "Imagery.since_near is unused. Cargo also warns that the vr_fire binary name is not kebab-case. These warnings are recorded separately from behavioral findings."
+  ]
+}

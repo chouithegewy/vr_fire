@@ -1,0 +1,168 @@
+<svg role="img" aria-labelledby="services-title services-desc" width="1070pt" height="863pt"
+ viewBox="0.00 0.00 1070.00 863.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title id="services-title">Multiplayer sessions &amp; lidar cache</title><desc id="services-desc">Two independent services: transient player state with an event log, and cached lidar products. Player IDs are process-local and restart at 1. JSONL event IDs are historical references, not globally unique foreign keys. Event (the in-memory recent view) drops the id/name fields stored in JSONL and retains only the last 60 entries. The lidar quota has no persistent entity today (F09). The two services have no code-level data relationship.</desc>
+<g id="services-graph0" class="graph" transform="scale(1 1) rotate(0) translate(25.2 837.95)">
+<title>services</title>
+
+<g id="services-edge1" class="edge">
+<title>peer&#45;&gt;player</title>
+<path fill="none" stroke="#527476" d="M199.25,-358.01C257.44,-388.52 331.49,-427.33 392.8,-459.48"/>
+<polygon fill="#527476" stroke="#527476" points="391.67,-461.46 398.49,-462.46 393.79,-457.43 391.67,-461.46"/>
+<text xml:space="preserve" text-anchor="middle" x="299.62" y="-442.7" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">tracks while connected</text>
+<text xml:space="preserve" text-anchor="middle" x="378.85" y="-459.06" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+<text xml:space="preserve" text-anchor="middle" x="220.22" y="-355.86" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge2" class="edge">
+<title>peer&#45;&gt;event</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M199.25,-306.38C267.34,-306.38 357.15,-306.38 422.85,-306.38"/>
+<polygon fill="#527476" stroke="#527476" points="422.73,-308.65 429.23,-306.38 422.73,-304.1 422.73,-308.65"/>
+<text xml:space="preserve" text-anchor="middle" x="299.62" y="-309.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">records historical events</text>
+<text xml:space="preserve" text-anchor="middle" x="411.71" y="-312.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="218.28" y="-294.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge4" class="edge">
+<title>peer&#45;&gt;remote</title>
+<path fill="none" stroke="#527476" d="M199.25,-254.74C262.36,-221.66 344.12,-178.79 408.06,-145.27"/>
+<polygon fill="#527476" stroke="#527476" points="408.93,-147.38 413.64,-142.35 406.82,-143.35 408.93,-147.38"/>
+<text xml:space="preserve" text-anchor="middle" x="299.62" y="-233.94" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">pose seen by other clients</text>
+<text xml:space="preserve" text-anchor="middle" x="402.24" y="-155.22" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+<text xml:space="preserve" text-anchor="middle" x="211.98" y="-234.92" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge3" class="edge">
+<title>event&#45;&gt;recent</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M593.24,-306.38C661.57,-306.38 759.81,-306.38 832.04,-306.38"/>
+<polygon fill="#527476" stroke="#527476" points="831.82,-308.65 838.32,-306.38 831.82,-304.1 831.82,-308.65"/>
+<text xml:space="preserve" text-anchor="middle" x="730.12" y="-309.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">projects / loads tail</text>
+<text xml:space="preserve" text-anchor="middle" x="820.8" y="-312.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="612.27" y="-294.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge5" class="edge">
+<title>quota&#45;&gt;lidarjob</title>
+<path fill="none" stroke="#527476" d="M179.34,-721.38C241.15,-721.38 328.12,-721.38 397.47,-721.38"/>
+<polygon fill="#527476" stroke="#527476" points="397.4,-723.65 403.9,-721.38 397.4,-719.1 397.4,-723.65"/>
+<text xml:space="preserve" text-anchor="middle" x="299.62" y="-724.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">admits running tile</text>
+<text xml:space="preserve" text-anchor="middle" x="386.38" y="-727.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="198.37" y="-709.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">1</text>
+</g>
+
+<g id="services-edge6" class="edge">
+<title>lidarjob&#45;&gt;cache</title>
+<path fill="none" stroke="#527476" stroke-dasharray="5,2" d="M618.21,-721.38C682.94,-721.38 765.31,-721.38 828.72,-721.38"/>
+<polygon fill="#527476" stroke="#527476" points="828.34,-723.65 834.84,-721.38 828.34,-719.1 828.34,-723.65"/>
+<text xml:space="preserve" text-anchor="middle" x="730.12" y="-724.62" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">produces outcome over time</text>
+<text xml:space="preserve" text-anchor="middle" x="817.32" y="-727.12" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="637.24" y="-709.38" font-family="DejaVu Sans" font-size="10.00" fill="#335e62">0..*</text>
+</g>
+
+<g id="services-node1" class="node">
+<title>peer</title>
+<polygon fill="#ffffff" stroke="none" points="0,-229.75 0,-383 199.5,-383 199.5,-229.75 0,-229.75"/>
+<polygon fill="#183b45" stroke="none" points="1,-348 1,-382 198.5,-382 198.5,-348 1,-348"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-360.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Relay connection</text>
+<polygon fill="#e6efed" stroke="none" points="1,-319.25 1,-348 198.5,-348 198.5,-319.25 1,-319.25"/>
+<text xml:space="preserve" text-anchor="start" x="9" y="-330.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Process&#45;local state</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-300.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: id: u64 (per process)</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-271.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">TCP / WebSocket</text>
+<text xml:space="preserve" text-anchor="start" x="9" y="-241.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">Sender&lt;String&gt; outbound queue</text>
+<polygon fill="none" stroke="#b4c9c6" points="0,-229.75 0,-383 199.5,-383 199.5,-229.75 0,-229.75"/>
+</g>
+
+<g id="services-node2" class="node">
+<title>player</title>
+<polygon fill="#ffffff" stroke="none" points="399.75,-430 399.75,-612.75 624,-612.75 624,-430 399.75,-430"/>
+<polygon fill="#183b45" stroke="none" points="400.75,-577.75 400.75,-611.75 623,-611.75 623,-577.75 400.75,-577.75"/>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-590.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Player</text>
+<polygon fill="#e6efed" stroke="none" points="400.75,-549 400.75,-577.75 623,-577.75 623,-549 400.75,-549"/>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-560.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Stats.players[id]</text>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-530.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: id (map key)</text>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-501.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">name, joined, last_seen</text>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-471.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">last_xy, rounded lat/lon</text>
+<text xml:space="preserve" text-anchor="start" x="408.75" y="-442.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">speed_kmh, boosting, updates, drops</text>
+<polygon fill="none" stroke="#b4c9c6" points="399.75,-430 399.75,-612.75 624,-612.75 624,-430 399.75,-430"/>
+</g>
+
+<g id="services-node3" class="node">
+<title>event</title>
+<polygon fill="#ffffff" stroke="none" points="430.5,-215 430.5,-397.75 593.25,-397.75 593.25,-215 430.5,-215"/>
+<polygon fill="#183b45" stroke="none" points="431.5,-362.75 431.5,-396.75 592.25,-396.75 592.25,-362.75 431.5,-362.75"/>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-375.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">JSONL event</text>
+<polygon fill="#e6efed" stroke="none" points="431.5,-334 431.5,-362.75 592.25,-362.75 592.25,-334 431.5,-334"/>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-345.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">RELAY_LOG / players.jsonl</text>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-315.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">no unique event key</text>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-286.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">t, kind, id, name, text</text>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-256.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">lat?, lon?, online</text>
+<text xml:space="preserve" text-anchor="start" x="439.5" y="-227.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">join | drop | flipped | leave</text>
+<polygon fill="none" stroke="#b4c9c6" points="430.5,-215 430.5,-397.75 593.25,-397.75 593.25,-215 430.5,-215"/>
+</g>
+
+<g id="services-node4" class="node">
+<title>recent</title>
+<polygon fill="#ffffff" stroke="none" points="839.62,-229.75 839.62,-383 1016.62,-383 1016.62,-229.75 839.62,-229.75"/>
+<polygon fill="#183b45" stroke="none" points="840.62,-348 840.62,-382 1015.62,-382 1015.62,-348 840.62,-348"/>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-360.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Event</text>
+<polygon fill="#e6efed" stroke="none" points="840.62,-319.25 840.62,-348 1015.62,-348 1015.62,-319.25 840.62,-319.25"/>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-330.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Stats.events (max 60)</text>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-300.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">at, kind, text</text>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-271.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">lat?, lon?</text>
+<text xml:space="preserve" text-anchor="start" x="848.62" y="-241.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">no retained id or name fields</text>
+<polygon fill="none" stroke="#b4c9c6" points="839.62,-229.75 839.62,-383 1016.62,-383 1016.62,-229.75 839.62,-229.75"/>
+</g>
+
+<g id="services-node5" class="node">
+<title>remote</title>
+<polygon fill="#ffffff" stroke="none" points="414.75,0 414.75,-182.75 609,-182.75 609,0 414.75,0"/>
+<polygon fill="#183b45" stroke="none" points="415.75,-147.75 415.75,-181.75 608,-181.75 608,-147.75 415.75,-147.75"/>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-160.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Remote</text>
+<polygon fill="#e6efed" stroke="none" points="415.75,-119 415.75,-147.75 608,-147.75 608,-119 415.75,-119"/>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-130.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Other clients&#39; Remotes.trucks[id]</text>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-100.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: id (per client map)</text>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-71.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">name, albers, h, target_rot, vel</text>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-41.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">entity, beacon, label</text>
+<text xml:space="preserve" text-anchor="start" x="423.75" y="-12.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">seen, rate, jitter, smoothing_err</text>
+<polygon fill="none" stroke="#b4c9c6" points="414.75,0 414.75,-182.75 609,-182.75 609,0 414.75,0"/>
+</g>
+
+<g id="services-node6" class="node">
+<title>quota</title>
+<polygon fill="#ffffff" stroke="none" points="19.88,-644.75 19.88,-798 179.62,-798 179.62,-644.75 19.88,-644.75"/>
+<polygon fill="#183b45" stroke="none" points="20.88,-763 20.88,-797 178.62,-797 178.62,-763 20.88,-763"/>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-775.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Lidar State</text>
+<polygon fill="#e6efed" stroke="none" points="20.88,-734.25 20.88,-763 178.62,-763 178.62,-734.25 20.88,-734.25"/>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-745.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Service singleton / memory</text>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-715.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">running: HashSet&lt;TileId&gt;</text>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-686.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">day: u64</text>
+<text xml:space="preserve" text-anchor="start" x="28.88" y="-656.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">calls_today: u32</text>
+<polygon fill="none" stroke="#b4c9c6" points="19.88,-644.75 19.88,-798 179.62,-798 179.62,-644.75 19.88,-644.75"/>
+</g>
+
+<g id="services-node7" class="node">
+<title>lidarjob</title>
+<polygon fill="#ffffff" stroke="none" points="405.38,-644.75 405.38,-798 618.38,-798 618.38,-644.75 405.38,-644.75"/>
+<polygon fill="#183b45" stroke="none" points="406.38,-763 406.38,-797 617.38,-797 617.38,-763 406.38,-763"/>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-775.75" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Lidar build request</text>
+<polygon fill="#e6efed" stroke="none" points="406.38,-734.25 406.38,-763 617.38,-763 617.38,-734.25 406.38,-734.25"/>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-745.5" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">Worker / runtime</text>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-715.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tile.tx + tile.ty</text>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-686.3" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">at most one running job</text>
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-656.8" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">request → resample → fill → encode</text>
+<polygon fill="none" stroke="#b4c9c6" points="405.38,-644.75 405.38,-798 618.38,-798 618.38,-644.75 405.38,-644.75"/>
+</g>
+
+<g id="services-node8" class="node">
+<title>cache</title>
+<polygon fill="#ffffff" stroke="none" points="836.25,-630 836.25,-812.75 1020,-812.75 1020,-630 836.25,-630"/>
+<polygon fill="#183b45" stroke="none" points="837.25,-777.75 837.25,-811.75 1019,-811.75 1019,-777.75 837.25,-777.75"/>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-790.5" font-family="DejaVu Sans" font-weight="bold" font-size="15.00" fill="#ffffff">Lidar cache entry</text>
+<polygon fill="#e6efed" stroke="none" points="837.25,-749 837.25,-777.75 1019,-777.75 1019,-749 837.25,-749"/>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-760.25" font-family="DejaVu Sans" font-size="10.00" fill="#325c60">HIRES_CACHE / files</text>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-730.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">K: tx_ty (filename)</text>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-701.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">{tile}.vrh: successful patch</text>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-671.55" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">{tile}.none: no&#45;lidar message</text>
+<text xml:space="preserve" text-anchor="start" x="845.25" y="-642.05" font-family="DejaVu Sans" font-size="11.00" fill="#18333d">success checked before .none</text>
+<polygon fill="none" stroke="#b4c9c6" points="836.25,-630 836.25,-812.75 1020,-812.75 1020,-630 836.25,-630"/>
+</g>
+</g>
+</svg>
