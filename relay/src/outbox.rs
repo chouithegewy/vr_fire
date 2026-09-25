@@ -176,7 +176,8 @@ impl Outbox {
         self.lock().high_water
     }
 
-    /// Poses that replaced an older pending pose.
+    /// Poses that replaced an older pending pose (the relay counts room-wide in `Counters`).
+    #[cfg(test)]
     pub fn coalesced(&self) -> u64 {
         self.lock().coalesced
     }

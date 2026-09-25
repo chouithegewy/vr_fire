@@ -15,6 +15,8 @@ pub struct Limits {
     pub max_frame: usize,
     pub read_buffer: usize,
     pub max_write_buffer: usize,
+    /// Kernel send buffer per socket (SO_SNDBUF), so a stalled reader blocks writes quickly.
+    pub send_buffer: usize,
     /// Total time allowed for one send/flush operation.
     pub write_deadline: Duration,
     pub read_poll: Duration,
@@ -38,6 +40,7 @@ impl Default for Limits {
             max_frame: 4096,
             read_buffer: 4096,
             max_write_buffer: 16 * 1024,
+            send_buffer: 64 * 1024,
             write_deadline: Duration::from_millis(500),
             read_poll: Duration::from_millis(20),
             handshake_deadline: Duration::from_secs(5),

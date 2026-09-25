@@ -134,6 +134,14 @@ truck re-centers the world on it, so 32-bit floats stay precise under the wheels
   from the map.
 - Truck-to-truck contact pushes only your own truck.
 - Being upside down for 1.5 s within 4 s of touching another truck is game over.
+- Players browsing the map without a truck send a 2 Hz presence pose; others see them in
+  the HUD count and as "(on map)" waypoints.
+- The relay admits at most 32 connections; a 33rd is closed before the WebSocket handshake.
+  Each player has a bounded 64-entry send queue in which a newer pose from the same sender
+  replaces the pending one. A player whose connection stops reading (writes stall for
+  500 ms or the queue overflows), or who sends more than 40 messages/s, is disconnected
+  without affecting anyone else. In every case the viewer reconnects after 5 s.
+  `/vr_fire/stats.json` reports the relay's queue gauges and disconnect reasons under `relay`.
 
 ## Environment variables (native only)
 

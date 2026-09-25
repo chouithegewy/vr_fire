@@ -47,6 +47,23 @@ impl Socket for TcpStream {
     }
 }
 
+/// Cap the kernel send buffer (Linux doubles the value for bookkeeping).
+pub fn limit_send_buffer(stream: &TcpStream, bytes: usize) -> io::Result<()> {
+    use std::os::fd::AsRawFd;
+    let v = libc::c_int::try_from(bytes).map_err(|_| io::Error::from(io::ErrorKind::InvalidInput))?;
+    // SAFETY: valid fd for the stream's lifetime; option value is a c_int of the given size.
+    let r = unsafe {
+        libc::setsockopt(
+            stream.as_raw_fd(),
+            libc::SOL_SOCKET,
+            libc::SO_SNDBUF,
+            (&v as *const libc::c_int).cast(),
+            std::mem::size_of::<libc::c_int>() as libc::socklen_t,
+        )
+    };
+    if r == 0 { Ok(()) } else { Err(io::Error::last_os_error()) }
+}
+
 /// Tungstenite limits from the relay's `Limits`: small frames/messages, eager writes and a
 /// bounded write buffer. Client frames must stay masked.
 pub fn ws_config(l: &Limits) -> WebSocketConfig {
@@ -126,10 +143,12 @@ impl<S: Socket, C: Clock> Guarded<S, C> {
         deadline.saturating_duration_since(now)
     }
 
+    #[cfg(test)]
     pub fn get_ref(&self) -> &S {
         &self.inner
     }
 
+    #[cfg(test)]
     pub fn get_mut(&mut self) -> &mut S {
         &mut self.inner
     }
