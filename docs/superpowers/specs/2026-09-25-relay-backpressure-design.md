@@ -303,3 +303,49 @@ memory measurements, slow-reader cleanup evidence and a protocol compatibility
 check. Record the implemented revision and any changes to the proposed defaults.
 Link that evidence from the review as a dated follow-up; preserve the original
 review snapshot and distinguish local validation from deployment verification.
+
+## 12. Implementation record (2026-09-25, local validation only)
+
+Implemented in `997f83c` (outbox, limits, token bucket), `805e4a8` (transport) and
+`893db14` (relay core, gauges, integration tests). Defaults are as proposed in §3, plus one
+addition: accepted sockets get `SO_SNDBUF` = 64 KiB (`Limits::send_buffer`). Without it,
+Linux autotuning (up to 4 MiB send, 32 MiB receive on loopback) lets a stalled reader absorb
+about a minute of traffic before any write blocks; with it, a stall is detected in seconds, and
+kernel memory per connection is bounded.
+
+**Tests:** `cargo test -p relay` gives 33 unit tests (outbox capacity/replacement/ordering and
+concurrency, token bucket with a fake clock, transport deadlines/handshake/frame limits/
+write-failure paths with a fake clock and socket, room admission/fan-out/cleanup) and 4
+integration tests against the release binary on loopback, all passing.
+
+**Slow reader (integration test):** a producer (20 Hz, 3.5 KiB poses, 1 Hz pings), a healthy
+receiver and a stalled receiver with a 4 KiB receive buffer. The stalled peer was removed
+after 3.1 s (`write_timeout`); the healthy peer saw 97 advancing poses and its ping echoes,
+received exactly one `leave`, and stayed connected.
+
+**Soak (release build, `systemd-run --user --scope -p MemoryMax=64M -p MemorySwapMax=0`,
+fresh event log, 710 s):** 28 healthy players at 20 Hz with 1 Hz pings, one stalled reader
+re-joining every 8 s, one reconnect cycler (5 s sessions), and one flooder (400 messages at
+once every 30 s). That is 31 admitted sockets at peak, one short of the cap.
+
+| Measure | Result |
+|---|---|
+| Healthy-peer disconnections | 0 |
+| Poses delivered to healthy peers | about 11 million |
+| Disconnects | 139 `client_close` (= cycles), 89 `write_timeout` (= stalled joins), 26 `rate_limit` (= flood rounds); nothing else |
+| Per-outbox high water | 30 (limit 64) |
+| Total pending entries | 396 at most (bound 32 × 64 = 2,048) |
+| Coalesced poses | 53,053 |
+| RSS | peak 6.09 MB; first steady window (120–170 s) 5.95–5.97 MB, last window 6.09 MB flat |
+| cgroup memory peak | 9.3 MB of the 64 MiB limit; no restart or OOM |
+
+RSS rose 0.13 MB over the ten sustained minutes and was flat for the final minute. This is
+reported as a plateau with small allocator drift, not as zero growth.
+
+**Not yet done:**
+- The run through local nginx with the checked-in proxy settings (nginx isn't installed on
+  the development machine).
+- A soak at exactly 32 admitted sockets. The cap itself is covered by the integration test.
+- Deployment. This spec doesn't authorize it.
+
+F01 stays open until these are resolved and the review links this record.
