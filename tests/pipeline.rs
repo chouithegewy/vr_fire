@@ -1,7 +1,7 @@
 mod common;
 
 use common::*;
-use vr_fire::bake::{BakeOptions, run_bake};
+use vr_fire::bake::{BakeOptions, MeshFormat, run_bake};
 use vr_fire::export::TileMetadata;
 use vr_fire::grid::{GridSpec, NODES_PER_SIDE, TileId, TileRange};
 use vr_fire::ingest::run_ingest;
@@ -28,7 +28,7 @@ fn load(path: &std::path::Path) -> (Vec<[f32; 3]>, Vec<[f32; 3]>) {
 fn bakes_every_ok_tile_with_all_outputs() {
     let (dir, tiles) = ingested();
     let out = dir.path().join("tiles");
-    let report = run_bake(&BakeOptions { store_dir: dir.path().join("store"), out_dir: out.clone(), tiles: None }).unwrap();
+    let report = run_bake(&BakeOptions { store_dir: dir.path().join("store"), out_dir: out.clone(), tiles: None, format: MeshFormat::Glb }).unwrap();
     assert_eq!(report.baked, tiles.len());
     assert!(report.failed.is_empty(), "{:?}", report.failed);
     for t in &tiles {
@@ -48,7 +48,7 @@ fn bakes_every_ok_tile_with_all_outputs() {
 fn neighboring_baked_tiles_are_seamless() {
     let (dir, tiles) = ingested();
     let out = dir.path().join("tiles");
-    run_bake(&BakeOptions { store_dir: dir.path().join("store"), out_dir: out.clone(), tiles: None }).unwrap();
+    run_bake(&BakeOptions { store_dir: dir.path().join("store"), out_dir: out.clone(), tiles: None, format: MeshFormat::Glb }).unwrap();
     let pair = tiles.iter().find(|t| tiles.contains(&t.east())).expect("two horizontally adjacent tiles");
     let n = NODES_PER_SIDE;
     let (wp, wn) = load(&out.join(format!("lod0/{pair}.glb")));
@@ -71,6 +71,7 @@ fn bake_edge_tile_without_neighbors() {
         store_dir: dir.path().join("store"),
         out_dir: dir.path().join("tiles"),
         tiles: Some(TileRange { min: lonely, max: lonely }),
+        format: MeshFormat::Glb,
     })
     .unwrap();
     assert_eq!(report.baked, 1, "{report:?}");
@@ -89,9 +90,28 @@ fn empty_and_unknown_tiles_are_reported() {
         store_dir: dir.path().join("store"),
         out_dir: dir.path().join("tiles"),
         tiles: Some(TileRange { min: empty, max: unknown }),
+        format: MeshFormat::Glb,
     })
     .unwrap();
     assert_eq!((report.baked, report.skipped_empty), (0, 1));
     assert_eq!(report.failed.len(), 1);
     assert!(report.failed[0].1.contains("vr_fire ingest"), "{}", report.failed[0].1);
+}
+
+#[test]
+fn bakes_fbx_instead_of_glb_or_both_when_asked() {
+    let (dir, tiles) = ingested();
+    let t = tiles[0];
+    for (format, glb, fbx) in [(MeshFormat::Fbx, false, true), (MeshFormat::Both, true, true)] {
+        let out = dir.path().join(format!("tiles_{format:?}"));
+        let report = run_bake(&BakeOptions { store_dir: dir.path().join("store"), out_dir: out.clone(), tiles: None, format }).unwrap();
+        assert!(report.failed.is_empty(), "{:?}", report.failed);
+        for lod in 0..4 {
+            assert_eq!(out.join(format!("lod{lod}/{t}.glb")).exists(), glb, "{format:?} lod{lod} glb");
+            let path = out.join(format!("lod{lod}/{t}.fbx"));
+            assert_eq!(path.exists(), fbx, "{format:?} lod{lod} fbx");
+            let bytes = std::fs::read(&path).unwrap();
+            assert!(bytes.starts_with(b"Kaydara FBX Binary  \0"));
+        }
+    }
 }

@@ -1,6 +1,7 @@
-//! `bake`: store height tiles → glb meshes (all LODs), raw heights, and metadata.
+//! `bake`: store height tiles → glb and/or FBX meshes (all LODs), raw heights, and metadata.
 
 use crate::export::{TileMetadata, write_glb, write_heights_f32, write_metadata};
+use crate::fbx::write_fbx;
 use crate::grid::{LOD_STRIDES, TileId, TileRange};
 use crate::mesh::{Neighborhood, build_mesh, compute_normals};
 use crate::store::{Store, StoreIndex, TileStatus};
@@ -14,6 +15,17 @@ pub struct BakeOptions {
     pub out_dir: PathBuf,
     /// None bakes every `ok` tile in the store.
     pub tiles: Option<TileRange>,
+    pub format: MeshFormat,
+}
+
+/// Mesh file format: glTF binary (Bevy, Blender, three.js) and/or FBX (Unity's native import).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "pipeline", derive(clap::ValueEnum))]
+pub enum MeshFormat {
+    #[default]
+    Glb,
+    Fbx,
+    Both,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -29,7 +41,7 @@ pub struct BakeReport {
     pub failed: Vec<(TileId, String)>,
 }
 
-pub fn bake_tile(store: &Store, index: &StoreIndex, tile: TileId, out_dir: &Path) -> Result<BakeOutcome> {
+pub fn bake_tile(store: &Store, index: &StoreIndex, tile: TileId, out_dir: &Path, format: MeshFormat) -> Result<BakeOutcome> {
     let grid = index.grid;
     let entry = index
         .get(tile)
@@ -56,7 +68,14 @@ pub fn bake_tile(store: &Store, index: &StoreIndex, tile: TileId, out_dir: &Path
     for lod in 0..LOD_STRIDES.len() {
         let dir = out_dir.join(format!("lod{lod}"));
         fs::create_dir_all(&dir)?;
-        write_glb(&dir.join(format!("{tile}.glb")), &build_mesh(&center, &normals, lod), &format!("tile_{tile}_lod{lod}"))?;
+        let mesh = build_mesh(&center, &normals, lod);
+        let name = format!("tile_{tile}_lod{lod}");
+        if format != MeshFormat::Fbx {
+            write_glb(&dir.join(format!("{tile}.glb")), &mesh, &name)?;
+        }
+        if format != MeshFormat::Glb {
+            write_fbx(&dir.join(format!("{tile}.fbx")), &mesh, &name)?;
+        }
     }
     write_heights_f32(&out_dir.join(format!("{tile}.f32")), &center)?;
     write_metadata(&out_dir.join(format!("{tile}.json")), &TileMetadata::new(&grid, tile, entry, &center))?;
@@ -73,7 +92,7 @@ pub fn run_bake(opts: &BakeOptions) -> Result<BakeReport> {
     fs::create_dir_all(&opts.out_dir)?;
     eprintln!("bake: {} tiles → {}", tiles.len(), opts.out_dir.display());
     let results: Vec<(TileId, Result<BakeOutcome>)> =
-        tiles.par_iter().map(|&t| (t, bake_tile(&store, &index, t, &opts.out_dir))).collect();
+        tiles.par_iter().map(|&t| (t, bake_tile(&store, &index, t, &opts.out_dir, opts.format))).collect();
     let mut report = BakeReport::default();
     for (t, r) in results {
         match r {

@@ -7,3 +7,7 @@
 /dist
 /deploy
 /packed
+/bench/tiles
+/bench/results
+/bench/bevy/web/webgpu
+/bench/bevy/web/webgl2

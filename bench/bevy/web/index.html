@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>vr_fire terrain bench (Bevy wasm)</title>
+<style>html, body { margin: 0; background: #8cb3e0; } #bevy { display: block; }</style>
+</head>
+<body>
+<canvas id="bevy" tabindex="0"></canvas>
+<script type="module">
+  // ?api=webgl2 forces the WebGL2 build; otherwise WebGPU when the browser offers an adapter.
+  const want = new URLSearchParams(location.search).get('api');
+  const adapter = want !== 'webgl2' && navigator.gpu ? await navigator.gpu.requestAdapter().catch(() => null) : null;
+  const dir = adapter ? './webgpu/' : './webgl2/';
+  console.log('bench api ' + (adapter ? 'webgpu' : 'webgl2'));
+  const m = await import(dir + 'terrain_bench.js');
+  try { await m.default(); } catch (e) { if (!String(e).includes('Using exceptions for control flow')) throw e; }
+</script>
+</body>
+</html>

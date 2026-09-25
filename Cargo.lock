@@ -5464,6 +5464,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "terrain-bench"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5921,6 +5930,7 @@ dependencies = [
  "anyhow",
  "brotli",
  "clap",
+ "flate2",
  "gltf",
  "proj4rs",
  "rayon",

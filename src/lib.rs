@@ -7,6 +7,7 @@ pub mod crs;
 pub mod dem;
 #[cfg(feature = "pipeline")]
 pub mod export;
+pub mod fbx;
 pub mod grid;
 #[cfg(feature = "pipeline")]
 pub mod ingest;

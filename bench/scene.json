@@ -1,0 +1,71 @@
+{
+  "about": "Shared benchmark: the same tiles and camera path in Unity and Bevy. Coordinates are metres east and south of the first tile's NW corner; Bevy uses (x=east, z=south), Unity (x=east, z=-south).",
+  "tile_m": 3750.0,
+  "lod": 0,
+  "tiles": [
+    {
+      "name": "101_351",
+      "east_m": 0.0,
+      "south_m": 0.0
+    },
+    {
+      "name": "101_352",
+      "east_m": 0.0,
+      "south_m": 3750.0
+    },
+    {
+      "name": "101_353",
+      "east_m": 0.0,
+      "south_m": 7500.0
+    },
+    {
+      "name": "102_351",
+      "east_m": 3750.0,
+      "south_m": 0.0
+    },
+    {
+      "name": "102_352",
+      "east_m": 3750.0,
+      "south_m": 3750.0
+    },
+    {
+      "name": "102_353",
+      "east_m": 3750.0,
+      "south_m": 7500.0
+    },
+    {
+      "name": "103_351",
+      "east_m": 7500.0,
+      "south_m": 0.0
+    },
+    {
+      "name": "103_352",
+      "east_m": 7500.0,
+      "south_m": 3750.0
+    },
+    {
+      "name": "103_353",
+      "east_m": 7500.0,
+      "south_m": 7500.0
+    }
+  ],
+  "min_elevation_m": 420.6,
+  "max_elevation_m": 973.8,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "msaa": 4,
+  "shadows": false,
+  "vsync": false,
+  "warmup_s": 5.0,
+  "duration_s": 30.0,
+  "orbit": {
+    "centre_east_m": 5625.0,
+    "centre_south_m": 5625.0,
+    "radius_m": 4000.0,
+    "altitude_m": 1273.8,
+    "look_at_height_m": 697.2,
+    "turns": 1.0
+  }
+}

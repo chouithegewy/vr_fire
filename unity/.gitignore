@@ -1,0 +1,15 @@
+# Unity generated
+/Library/
+/Temp/
+/Obj/
+/Logs/
+/UserSettings/
+/Build/
+/MemoryCaptures/
+*.csproj
+*.sln
+# Tiles are copied in from ../bench/tiles by VrFireBatch.ImportTiles
+/Assets/VrFire/Tiles/
+/Assets/VrFire/Tiles.meta
+/Assets/StreamingAssets/
+/Assets/StreamingAssets.meta

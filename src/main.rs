@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
-use vr_fire::bake::{BakeOptions, run_bake};
+use vr_fire::bake::{BakeOptions, MeshFormat, run_bake};
 use vr_fire::crs::Albers;
 use vr_fire::grid::{GridSpec, TileId, TileRange, cell_to_tile};
 use vr_fire::ingest::{IngestOptions, run_ingest};
@@ -52,6 +52,9 @@ enum Command {
         store: PathBuf,
         #[arg(long, default_value = "tiles")]
         out: PathBuf,
+        /// Mesh format: glb (Bevy, Blender), fbx (Unity imports it natively), or both.
+        #[arg(long, value_enum, default_value = "glb")]
+        format: MeshFormat,
     },
     /// Pack store tiles into compressed .vrh patches for the web viewer (every LOD).
     Pack {
@@ -86,8 +89,8 @@ fn main() -> Result<ExitCode> {
             println!("ingest: {} written, {} empty, {} skipped, {} failed", r.written, r.empty, r.skipped, r.failed.len());
             r.failed
         }
-        Command::Bake { tiles, store, out } => {
-            let r = run_bake(&BakeOptions { store_dir: store, out_dir: out, tiles })?;
+        Command::Bake { tiles, store, out, format } => {
+            let r = run_bake(&BakeOptions { store_dir: store, out_dir: out, tiles, format })?;
             println!("bake: {} baked, {} empty, {} failed", r.baked, r.skipped_empty, r.failed.len());
             r.failed
         }
