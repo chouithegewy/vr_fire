@@ -231,6 +231,16 @@ fn main() {
         ),
     );
     bevy::asset::embedded_asset!(app, "near.wgsl");
+    // Traced runs (`trace` feature): cap updates near 144 Hz so the trace stays a manageable
+    // size. Not vsync: compositors stop frame callbacks for hidden windows.
+    #[cfg(not(target_arch = "wasm32"))]
+    if std::env::var("TRACE_CHROME").is_ok() {
+        let every = std::time::Duration::from_secs_f64(1.0 / 144.0);
+        app.insert_resource(bevy::winit::WinitSettings {
+            focused_mode: bevy::winit::UpdateMode::reactive(every),
+            unfocused_mode: bevy::winit::UpdateMode::reactive(every),
+        });
+    }
     app.add_systems(Startup, minimap::setup.after(setup));
     app.add_plugins(dinos::DinoPlugin);
     app.add_systems(

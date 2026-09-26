@@ -11,3 +11,6 @@ serde_json = "1.0.151"
 
 [features]
 webgpu = ["bevy/webgpu"]
+# Profiling: Chrome-format trace of every system/render span (TRACE_CHROME=<file>) and GPU time
+# per render pass in the result JSON.
+trace = ["bevy/trace_chrome"]

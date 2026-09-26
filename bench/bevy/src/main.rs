@@ -64,12 +64,19 @@ fn pose(o: &Orbit, u: f32) -> (Vec3, Vec3) {
 }
 
 fn main() {
-    let scene: Scene = serde_json::from_str(SCENE).expect("bench/scene.json");
+    let mut scene: Scene = serde_json::from_str(SCENE).expect("bench/scene.json");
+    // Shorter runs for profiling (a trace of every span grows quickly).
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let secs = |k: &str| std::env::var(k).ok().and_then(|v| v.parse::<f32>().ok());
+        scene.warmup_s = secs("BENCH_WARMUP_S").unwrap_or(scene.warmup_s);
+        scene.duration_s = secs("BENCH_DURATION_S").unwrap_or(scene.duration_s);
+    }
     let [w, h] = scene.resolution;
     // Native reads bench/ from the repo; the web page lives at bench/bevy/web/ on the server.
     let root = if cfg!(target_arch = "wasm32") { "../..".to_string() } else { format!("{}/..", env!("CARGO_MANIFEST_DIR")) };
-    App::new()
-        .add_plugins(
+    let mut app = App::new();
+    app.add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
@@ -89,15 +96,23 @@ fn main() {
         .insert_resource(GlobalAmbientLight { color: Color::srgb(0.45, 0.47, 0.5), brightness: 400.0, ..default() })
         .init_resource::<Run>()
         .add_systems(Startup, setup)
-        .add_systems(Update, (fly, measure).chain())
-        .run();
+        .add_systems(Update, (fly, measure).chain());
+    // GPU time per render pass: with the `trace` feature, or BENCH_GPU_TIMING=1 without the
+    // Chrome trace (which slows frames and so changes GPU clocks).
+    if cfg!(feature = "trace") || std::env::var("BENCH_GPU_TIMING").is_ok() {
+        app.add_plugins(bevy::render::diagnostic::RenderDiagnosticsPlugin);
+    }
+    app.run();
 }
 
 fn setup(mut commands: Commands, scene: Res<Scene>, assets: Res<AssetServer>, mut mats: ResMut<Assets<StandardMaterial>>, mut run: ResMut<Run>) {
+    // BENCH_UNLIT=1: same geometry with no lighting, to separate shading cost from geometry.
+    let unlit = !cfg!(target_arch = "wasm32") && std::env::var("BENCH_UNLIT").is_ok();
     let terrain = mats.add(StandardMaterial {
         base_color: Color::srgb(0.42, 0.45, 0.33),
         perceptual_roughness: 0.9,
         metallic: 0.0,
+        unlit,
         ..default()
     });
     for t in &scene.tiles {
@@ -148,6 +163,7 @@ fn measure(
     scene: Res<Scene>,
     meshes: Res<Assets<Mesh>>,
     adapter: Option<Res<RenderAdapterInfo>>,
+    diagnostics: Res<bevy::diagnostic::DiagnosticsStore>,
     windows: Query<&Window>,
     mut run: ResMut<Run>,
     mut commands: Commands,
@@ -196,6 +212,22 @@ fn measure(
             "p50": pct(&sorted, 0.5), "p95": pct(&sorted, 0.95), "p99": pct(&sorted, 0.99), "max": sorted[sorted.len() - 1],
         },
     });
+    // GPU/CPU time per render pass (RenderDiagnosticsPlugin, `trace` feature), mean ms.
+    let mut json = json;
+    {
+        let mut passes = serde_json::Map::new();
+        for d in diagnostics.iter() {
+            let path = d.path().as_str();
+            if path.ends_with("elapsed_gpu") || path.ends_with("elapsed_cpu") {
+                if let Some(v) = d.average() {
+                    passes.insert(path.to_string(), serde_json::json!((v * 1000.0).round() / 1000.0));
+                }
+            }
+        }
+        if !passes.is_empty() {
+            json["render_passes_ms"] = serde_json::Value::Object(passes);
+        }
+    }
     info!("BENCH_RESULT {json}");
     #[cfg(not(target_arch = "wasm32"))]
     {

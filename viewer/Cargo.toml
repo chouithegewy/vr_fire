@@ -16,3 +16,6 @@ zune-jpeg = "0.5.15"
 
 [features]
 webgpu = ["bevy/webgpu"]
+# Profiling: Chrome-format trace of every system/render span to TRACE_CHROME=<file>
+# (analyse with bench/scripts/trace_profile.py).
+trace = ["bevy/trace_chrome"]
