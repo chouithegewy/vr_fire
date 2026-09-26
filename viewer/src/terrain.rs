@@ -41,7 +41,8 @@ const MAX_PACKED_INFLIGHT: usize = 16;
 pub enum Patch {
     Super { sx: i64, sy: i64 },
     Tile { t: TileId, lod: u8 },
-    /// On-demand 3.75 m tile from USGS 1 m lidar (via the `hires` service).
+    /// On-demand tile from USGS 1 m lidar (via the `hires` service), meshed at 10 m; its 1 m
+    /// detail is drawn with a normal map (see `lidar.rs`).
     Hires { t: TileId },
 }
 
@@ -99,7 +100,9 @@ impl Patch {
             }
             Patch::Hires { t } => {
                 let b = g.tile_bounds(t);
-                Spec { x_min: b.x_min, y_max: b.y_max, spacing: lod::HIRES_SPACING_M, n: lod::hires_nodes(), level: 0 }
+                // 10 m mesh (284k triangles, not 2 M at 3.75 m): lighting detail comes from the
+                // 1 m normal map, and the truck's wheels follow the same 10 m surface.
+                Spec { x_min: b.x_min, y_max: b.y_max, spacing: lod::tile_spacing(0), n: lod::tile_nodes(0), level: 0 }
             }
         }
     }
@@ -557,6 +560,7 @@ pub fn run_jobs(
             200 => match vr_fire::codec::decode(&bytes) {
                 Ok((side, h)) if side == lod::hires_nodes() + 2 => {
                     terrain.packed_bytes += bytes.len() as u64;
+                    let h = lod::resample_ringed(&h, lod::hires_nodes(), lod::HIRES_SPACING_M, lod::tile_nodes(0), lod::tile_spacing(0));
                     terrain.jobs.insert(0, Job { patch: Patch::Hires { t }, prio: -1.0, stage: Stage::Build, ll: Vec::new(), heights: h });
                     HiresState::Building
                 }
@@ -697,7 +701,7 @@ impl Terrain {
     }
 }
 
-fn hires_base() -> String {
+pub fn hires_base() -> String {
     #[cfg(not(target_arch = "wasm32"))]
     if let Ok(url) = std::env::var("VR_FIRE_HIRES") {
         return url;

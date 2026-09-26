@@ -145,6 +145,10 @@ pub struct NearParams {
     /// Mean linear luminance of detail layers 0–3 and 4.
     pub lum_a: Vec4,
     pub lum_b: Vec4,
+    /// World X/Z → UV of the active lidar normal map (same form as `u`/`v`; u.w = 1 when on).
+    /// lidar_v.w = 1 paints the terrain plain grey (VR_FIRE_LIGHTING_ONLY, native A/B runs).
+    pub lidar_u: Vec4,
+    pub lidar_v: Vec4,
 }
 
 #[derive(Asset, AsBindGroup, Reflect, Debug, Clone, Default)]
@@ -160,6 +164,10 @@ pub struct NearImagery {
     /// Detail layer per ~30 m cell (R channel; 255 = none), same square as `texture`.
     #[texture(105)]
     pub fuel: Option<Handle<Image>>,
+    /// 1 m lidar normal map of one tile (Rg8Snorm: east, south components); see `lidar.rs`.
+    #[texture(106)]
+    #[sampler(107)]
+    pub lidar: Option<Handle<Image>>,
 }
 
 impl MaterialExtension for NearImagery {
@@ -252,6 +260,8 @@ pub struct Imagery {
     /// Extension shared by every terrain material (updated when the near image moves).
     near_ext: NearImagery,
     near_dirty: bool,
+    /// Active lidar normal map and its tile (set by `lidar::run`).
+    lidar: Option<(vr_fire::grid::TileId, Handle<Image>)>,
     since_near: f32,
 }
 
@@ -293,6 +303,7 @@ impl Imagery {
             fuel_tx,
             fuel_rx: Mutex::new(fuel_rx),
             near_ext: NearImagery::default(),
+            lidar: None,
             near_dirty: false,
             since_near: 0.0,
         };
@@ -460,6 +471,16 @@ pub fn run(mut imagery: ResMut<Imagery>, mut images: ResMut<Assets<Image>>, mut 
                 extension: im.near_ext.clone(),
             });
             im.mosaics.insert(key, MosaicState::Ready(material));
+        }
+    }
+}
+
+impl Imagery {
+    /// Set the active lidar normal map (or none); marks the shared extension for an update.
+    pub fn set_lidar(&mut self, lidar: Option<(vr_fire::grid::TileId, Handle<Image>)>) {
+        if self.lidar.as_ref().map(|l| l.0) != lidar.as_ref().map(|l| l.0) {
+            self.lidar = lidar;
+            self.near_dirty = true;
         }
     }
 }
@@ -645,10 +666,21 @@ pub fn near(
             params.detail = Vec4::new(if fuel.is_some() { 1.0 } else { 0.0 }, DETAIL_TILE_M, DETAIL_STRENGTH, DETAIL_FADE_M);
             params.lum_a = Vec4::new(l[0], l[1], l[2], l[3]);
             params.lum_b = Vec4::new(l[4], 0.0, 0.0, 0.0);
-            NearImagery { params, texture: Some(image.clone()), detail: Some(im.detail.clone()), fuel }
+            NearImagery { params, texture: Some(image.clone()), detail: Some(im.detail.clone()), fuel, lidar: None }
         }
         _ => NearImagery { detail: Some(im.detail.clone()), ..default() },
     };
+    if let Some((t, map)) = &im.lidar {
+        let b = vr_fire::grid::GridSpec::default().tile_bounds(*t);
+        let (u, v) = crate::lidar::lidar_params(b.x_min, b.y_max, b.x_max - b.x_min, vr_fire::lod::hires_fine_nodes(), origin.0);
+        im.near_ext.params.lidar_u = u;
+        im.near_ext.params.lidar_v = v;
+        im.near_ext.lidar = Some(map.clone());
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    if std::env::var("VR_FIRE_LIGHTING_ONLY").is_ok() {
+        im.near_ext.params.lidar_v.w = 1.0;
+    }
     // Materials created later copy `near_ext` (see `run`), so updating the existing ones is enough.
     for (_, m) in mats.iter_mut() {
         m.extension = im.near_ext.clone();

@@ -6,6 +6,7 @@ mod diag;
 mod dinos;
 mod cog;
 mod imagery;
+mod lidar;
 mod minimap;
 mod net;
 mod terrain;
@@ -74,7 +75,7 @@ fn autopilot(
     time: Res<Time>,
     mut keys: ResMut<ButtonInput<KeyCode>>,
     mut drag: ResMut<Drag>,
-    map: Res<MapCam>,
+    mut map: ResMut<MapCam>,
     truck: Res<Truck>,
     mut chase: ResMut<ChaseCam>,
     mut commands: Commands,
@@ -82,6 +83,8 @@ fn autopilot(
     mut exit: MessageWriter<AppExit>,
     diag: Res<DiagnosticsStore>,
     dinosaurs: Res<dinos::Dinos>,
+    lidar_maps: Res<lidar::Lidar>,
+    mut aerial_at: Local<Option<f32>>,
 ) {
     use bevy::render::view::screenshot::{Screenshot, save_to_disk};
     let Ok(dir) = std::env::var("VR_FIRE_AUTOPILOT") else { return };
@@ -107,8 +110,17 @@ fn autopilot(
     // VR_FIRE_AUTOPILOT_DINOS: dinosaur mode, then hard-left circles around a tame stegosaurus
     // with the lasso ready (the dinosaur module screenshots the netted and hog-tied moments).
     let dinos: &[(f32, u8)] = &[(8.0, 0), (9.0, 1), (20.0, 2), (21.0, 3), (30.0, 4), (30.5, 20), (31.0, 21), (35.0, 22), (35.5, 23), (150.0, 11)];
+    // VR_FIRE_AUTOPILOT_LIDAR: drop at Placerville, fetch its lidar, then an oblique aerial view
+    // of the tile from ~1.2 km (where 1 m relief shows in the lighting).
+    let lidar: &[(f32, u8)] = &[(8.0, 0), (9.0, 1), (20.0, 2), (21.0, 3), (22.0, 12), (30.0, 4), (40.0, 30), (40.5, 31), (48.0, 32), (49.0, 11)];
     let demo = std::env::var("VR_FIRE_AUTOPILOT_DINOS").is_ok();
-    let plan = if demo { dinos } else { drive };
+    let plan = if demo {
+        dinos
+    } else if std::env::var("VR_FIRE_AUTOPILOT_LIDAR").is_ok() {
+        lidar
+    } else {
+        drive
+    };
     if demo && *step >= 9 {
         // Circle slowly: hold left, pulse the throttle to stay near 16 km/h (below the scare speed).
         keys.press(KeyCode::KeyA);
@@ -122,6 +134,17 @@ fn autopilot(
         // The dinosaur demo waits for its animals (terrain may still be streaming).
         if demo && matches!(plan[*step].1, 22 | 23) && dinosaurs.nearby() == 0 {
             break;
+        }
+        // The lidar view waits for its normal map (terrain and lidar may still be streaming).
+        if plan[*step].1 == 30 && !lidar_maps.any_ready() && t < 150.0 {
+            break;
+        }
+        // …and its screenshot comes 7 s after the aerial camera is set, whenever that was.
+        if plan[*step].1 == 32 && aerial_at.is_some_and(|a| t < a + 7.0) {
+            break;
+        }
+        if plan[*step].1 == 11 && aerial_at.is_some_and(|a| t < a + 9.0) {
+            break; // let the screenshot be taken before exiting
         }
         match plan[*step].1 {
             0 => shot(&mut commands, "1_california"),
@@ -144,6 +167,18 @@ fn autopilot(
                 chase.dist = 40.0;
             }
             10 => shot(&mut commands, "6_turning"),
+            30 => {
+                keys.release(KeyCode::KeyF);
+                keys.press(KeyCode::KeyM);
+            }
+            31 => {
+                *aerial_at = Some(t);
+                keys.release(KeyCode::KeyM);
+                map.dist = 1200.0;
+                map.pitch = 0.55;
+                map.yaw = 0.8;
+            }
+            32 => shot(&mut commands, "7_lidar_oblique"),
             20 => keys.press(KeyCode::KeyJ),
             21 => {
                 keys.release(KeyCode::KeyJ);
@@ -213,6 +248,7 @@ fn main() {
     .init_resource::<cog::Cog>()
     .init_resource::<net::Remotes>()
     .init_resource::<net::MapFocus>()
+    .init_resource::<lidar::Lidar>()
     .add_systems(Startup, (setup, net::setup))
     .add_systems(FixedUpdate, truck::physics)
     .add_systems(
@@ -222,6 +258,7 @@ fn main() {
             terrain::run_jobs,
             imagery::run,
             imagery::apply,
+            lidar::run.before(imagery::near),
             imagery::near,
             (map_input, truck::reset, mode_keys, source_toggle, cameras, truck::sync_model, publish_map_focus, net::sync).chain(),
             hud,
@@ -660,7 +697,7 @@ fn hud(
             s += &match st {
                 terrain::HiresState::Waiting { age, .. } => format!("  {t} fetching + processing on server {age:.0}s"),
                 terrain::HiresState::Building => format!("  {t} building mesh"),
-                terrain::HiresState::Ready => format!("  {t} ready (3.75 m)"),
+                terrain::HiresState::Ready => format!("  {t} ready (10 m mesh, 1 m normal map)"),
                 terrain::HiresState::Unavailable(m) => format!("  {t} none: {m}"),
             };
         }

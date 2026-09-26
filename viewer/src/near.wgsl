@@ -34,6 +34,9 @@ struct NearImagery {
     // Mean linear luminance of detail layers 0-3, and 4.
     lum_a: vec4<f32>,
     lum_b: vec4<f32>,
+    // World X/Z -> UV of the active 1 m lidar normal map; lidar_u.w = 1 when on.
+    lidar_u: vec4<f32>,
+    lidar_v: vec4<f32>,
 }
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(100) var<uniform> near: NearImagery;
@@ -42,6 +45,8 @@ struct NearImagery {
 @group(#{MATERIAL_BIND_GROUP}) @binding(103) var detail_texture: texture_2d_array<f32>;
 @group(#{MATERIAL_BIND_GROUP}) @binding(104) var detail_sampler: sampler;
 @group(#{MATERIAL_BIND_GROUP}) @binding(105) var fuel_texture: texture_2d<f32>;
+@group(#{MATERIAL_BIND_GROUP}) @binding(106) var lidar_texture: texture_2d<f32>;
+@group(#{MATERIAL_BIND_GROUP}) @binding(107) var lidar_sampler: sampler;
 
 fn hash2(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -74,6 +79,17 @@ fn fragment(
     @builtin(front_facing) is_front: bool,
 ) -> FragmentOutput {
     var pbr_input = pbr_input_from_standard_material(in, is_front);
+
+    // 1 m lidar relief: inside the active lidar tile, light with the baked normal instead of
+    // the 10 m mesh normal (sampled unconditionally: sampling needs uniform control flow).
+    let lp = in.world_position.xz;
+    let luv = vec2<f32>(dot(near.lidar_u.xyz, vec3<f32>(lp, 1.0)), dot(near.lidar_v.xyz, vec3<f32>(lp, 1.0)));
+    let ln = textureSample(lidar_texture, lidar_sampler, clamp(luv, vec2<f32>(0.0), vec2<f32>(1.0))).rg;
+    if near.lidar_u.w > 0.5 && all(luv >= vec2<f32>(0.0)) && all(luv <= vec2<f32>(1.0)) {
+        let n = normalize(vec3<f32>(ln.x, sqrt(max(1.0 - dot(ln, ln), 0.0)), ln.y));
+        pbr_input.N = n;
+        pbr_input.world_normal = n;
+    }
 
     let p = in.world_position.xz;
     let uv = vec2<f32>(near.u.x * p.x + near.u.y * p.y + near.u.z, near.v.x * p.x + near.v.y * p.y + near.v.z);
@@ -109,6 +125,9 @@ fn fragment(
         }
     }
 
+    if near.lidar_v.w > 0.5 {
+        base = vec3<f32>(0.5); // lighting-only debug view
+    }
     pbr_input.material.base_color = vec4<f32>(base, pbr_input.material.base_color.a);
     pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
 
