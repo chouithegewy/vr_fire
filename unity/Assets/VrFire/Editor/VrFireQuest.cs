@@ -200,6 +200,7 @@ namespace VrFire.EditorTools
         /// First invocation: everything but the build. Switching the Input System on only
         /// reaches the Editor's compiled scripts after a restart; building in the same session
         /// fails with "script class layout is incompatible between the editor and the player".
+        [MenuItem("VrFire/Quest/1. Set up (tiles, Android, OpenXR, scene), then restart Unity")]
         public static void Setup()
         {
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
@@ -211,6 +212,7 @@ namespace VrFire.EditorTools
         }
 
         /// Second invocation (fresh Editor): re-apply the XR settings and build the APK.
+        [MenuItem("VrFire/Quest/2. Build APK")]
         public static void Build()
         {
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)

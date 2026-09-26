@@ -69,6 +69,7 @@ namespace VrFire.EditorTools
             throw new Exception(msg);
         }
 
+        [MenuItem("VrFire/Desktop/1. Import 10 m tiles (bench/tiles/lod0)")]
         public static void ImportTiles()
         {
             var src = Arg("-tiles", Path.Combine(RepoRoot, "bench", "tiles", "lod0"));
@@ -81,6 +82,7 @@ namespace VrFire.EditorTools
         }
 
         /// Imported meshes must match the raw heights: NW corner at the origin, +x east, +z north.
+        [MenuItem("VrFire/Desktop/2. Verify imported tiles")]
         public static void Verify()
         {
             var heightsDir = Arg("-heights", Path.Combine(RepoRoot, "bench", "tiles"));
@@ -143,6 +145,7 @@ namespace VrFire.EditorTools
             return urp;
         }
 
+        [MenuItem("VrFire/Desktop/3. Build benchmark scene")]
         public static void BuildScene()
         {
             var scenePath = Arg("-scene", Path.Combine(RepoRoot, "bench", "scene.json"));
@@ -221,6 +224,7 @@ namespace VrFire.EditorTools
             AssetDatabase.SaveAssets();
         }
 
+        [MenuItem("VrFire/Desktop/4. Build Linux player")]
         public static void BuildLinux()
         {
             var output = Arg("-out", Path.Combine(Application.dataPath, "..", "Build", "Linux", "vr_fire_bench.x86_64"));
@@ -237,6 +241,7 @@ namespace VrFire.EditorTools
             Debug.Log($"VRFIRE built {output} ({sum.totalSize / 1e6:0.0} MB) in {sum.totalTime.TotalSeconds:0}s");
         }
 
+        [MenuItem("VrFire/Desktop/All steps")]
         public static void All()
         {
             ImportTiles();
