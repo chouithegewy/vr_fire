@@ -44,7 +44,7 @@ claims and announces damage, knockouts and respawns through the existing bounded
 3. **Old viewers in the room:** a pose without `k`/`w`/`hp` still renders as a truck, and
    `dmg`/`ko` messages are ignored by them (Task 8 test `old_poses_default_to_truck`).
 4. **Shooting through a hill:** the ray stops at terrain (Task 3 test).
-5. **R with a weapon out never resets the robot, and R in the truck never reloads** (Task 5
+5. **R with a weapon out never resets the robot, and R in the truck never reloads** (Task 7
    test `r_reloads_only_with_a_weapon_out`).
 
 ---

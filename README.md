@@ -54,7 +54,15 @@ Or open the script in Blender's Scripting tab and click Run. It imports every ba
 nine findings, source evidence, validation results, and three entity relationship diagrams.
 A [Markdown version](docs/review/README.md) and reproducible offline probes are included.
 
-Fix specification: [bounded relay queues and slow-client isolation](docs/superpowers/specs/2026-09-25-relay-backpressure-design.md) (F01; implementation pending).
+Fix specification and validation record: [bounded relay queues and slow-client isolation](docs/superpowers/specs/2026-09-25-relay-backpressure-design.md) (F01 implemented; final proxy/full-cap acceptance remains).
+
+## Architecture and VR readiness
+
+[System architecture, data pipeline, current state, wildfire gap analysis, and Meta Quest 2 port plan](docs/architecture-and-vr-readiness.md).
+
+[Local neural inference and compression assessment](docs/neural-inference-and-compression.md): learned terrain prediction, model compression, offline versus client inference, and Quest tradeoffs.
+
+[Firepanel companion-site analysis](docs/firepanel-companion-analysis.md): live source inventory, forecast schemas, observed data-quality issues, and a shared-data integration plan for the terrain and Quest clients.
 
 ## Conventions
 

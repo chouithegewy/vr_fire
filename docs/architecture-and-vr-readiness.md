@@ -2,6 +2,8 @@
 
 **Snapshot:** 2026-09-25, repository revision `3b525e671c2771dc69444144b548cc317fa3fd6a`, plus the uncommitted local dinosaur/lasso work described below.
 
+**Later same-day context:** the [Unity project](../unity/README.md) now documents an Android/OpenXR Quest target, not yet profiled on a headset. The [Firepanel companion analysis](firepanel-companion-analysis.md) documents external wildfire observations and forecasts that are not yet integrated into this runtime. The implementation-status statements below describe the original snapshot, not these subsequent developments.
+
 This document describes the system that exists in this repository, the data it consumes and produces, the deployed network topology, the work that is still missing for a wildfire simulator, and the practical cost of turning the viewer into VR—especially a standalone Meta Quest 2 application.
 
 Statements are classified as:
@@ -193,7 +195,13 @@ The 3DEP source cell `n39w121`, for example, covers latitude `[38, 39)` and long
 | Dinosaur herds | Deterministic hash of 1 km EPSG:5070 cells | None | Local client only; not networked |
 | Hires tile status | `hires` memory plus cached `.vrh`/`.none` files | Files survive restart; running jobs and quota counters do not | Hires service |
 | Relay activity | Relay observations | Append-only JSONL plus last 60 events in memory | Relay |
-| Fire state | **No source exists** | None | Not implemented |
+| Fire state | **No source integrated into this runtime** | None | Not implemented |
+
+### 5.4 Firepanel companion observations and forecasts
+
+[Firepanel](https://firepanel.ai/?mission=Wildfire) is a separate MMGIS dashboard with configured perimeter, satellite, weather, and forecast layers. A same-day read-only inspection verified FDEO and hourly PM2.5 raster products through STAC/TiTiler. These products provide environmental context, not an implemented fire-spread solver in this repository.
+
+See the [companion-site analysis](firepanel-companion-analysis.md) for the 93-layer inventory, sampled array schemas, incomplete historical-perimeter query, unresolved forecast semantics, and proposed versioned data contract. Raw scalar values, masks, timestamps, units, and provenance should cross that boundary; display colors should not become simulation inputs.
 
 ## 6. Offline ingestion and transformation
 
@@ -751,6 +759,12 @@ Implement in stages:
 6. Validation images comparing rendered cell boundaries against model arrays and known coordinates.
 
 Smoke and translucent fire particles are especially expensive in VR because overdraw is paid across two high-resolution eye views. The first VR milestone should use an opaque/emissive terrain overlay and sparse effects, not cinematic volumetric smoke.
+
+### 14.5 Experimental local neural inference
+
+The [local inference and compression assessment](neural-inference-and-compression.md) evaluates semantic masks, generated materials, model compression, and a small 2D terrain predictor. The predictor would estimate elevations and store correction residuals; any size or speed gain still needs measurement against the existing codec.
+
+Training and encoding can happen offline, but a neural reconstruction path also requires client inference. Offline-baked assets or model-selected conventional compression modes can avoid that client cost. The assessment explains these alternatives, deterministic reconstruction requirements, engine portability, and Quest constraints. No neural model has been integrated or benchmarked by this documentation work.
 
 ## 15. VR architecture options
 
